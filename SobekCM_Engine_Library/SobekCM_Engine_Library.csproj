@@ -20,7 +20,8 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Debug\SobekCM_Engine_Library.XML</DocumentationFile>
+    <DocumentationFile>
+    </DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -59,7 +60,6 @@
     <Compile Include="ApplicationState\Checked_Out_Item.cs" />
     <Compile Include="ApplicationState\Checked_Out_Items_List.cs" />
     <Compile Include="ApplicationState\Engine_ApplicationCache_Gateway.cs" />
-    <Compile Include="ApplicationState\Item_Lookup_Object.cs" />
     <Compile Include="Client\SobekEngineClient_AdminEndpoints.cs" />
     <Compile Include="Client\SobekEngineClient.cs" />
     <Compile Include="Client\SobekEngineClient_AggregationEndpoints.cs" />
@@ -72,9 +72,11 @@
     <Compile Include="Configuration\Configuration_Files_Reader.cs" />
     <Compile Include="Configuration\ContactForm_Configuration_Reader.cs" />
     <Compile Include="Configuration\Static_Resources_Gateway.cs" />
+    <Compile Include="Database\Database_Results_Info.cs" />
     <Compile Include="Email\Email_Helper.cs" />
     <Compile Include="Endpoints\AdministrativeServices.cs" />
     <Compile Include="Endpoints\AggregationServices.cs" />
+    <Compile Include="Endpoints\BuilderLogSummaryServices.cs" />
     <Compile Include="Endpoints\BuilderServices.cs" />
     <Compile Include="Endpoints\CacheServices.cs" />
     <Compile Include="Endpoints\CustomServices.cs" />
@@ -115,6 +117,7 @@
     <Compile Include="Items\BriefItems\Mappers\Manufacturers_BriefItemMapper.cs" />
     <Compile Include="Items\BriefItems\Mappers\Names_BriefItemMapper.cs" />
     <Compile Include="Items\BriefItems\Mappers\Notes_BriefItemMapper.cs" />
+    <Compile Include="Items\BriefItems\Mappers\Other_URL_BriefItemMapper.cs" />
     <Compile Include="Items\BriefItems\Mappers\Physical_Description_BriefItemMapper.cs" />
     <Compile Include="Items\BriefItems\Mappers\Publisher_BriefItemMapper.cs" />
     <Compile Include="Items\BriefItems\Mappers\Related_Items_BriefItemMapper.cs" />
@@ -133,6 +136,7 @@
     <Compile Include="Items\BriefItems\Mappers\VRACore_BriefItemMapper.cs" />
     <Compile Include="Items\BriefItems\Mappers\Web_BriefItemMapper.cs" />
     <Compile Include="Items\BriefItems\Mappers\Zoological_Taxonomy_BriefItemMapper.cs" />
+    <Compile Include="Items\SobekCM_Item_Error.cs" />
     <Compile Include="Items\SobekCM_Item_Updater.cs" />
     <Compile Include="Database\Database_Item_Result.cs" />
     <Compile Include="Database\Database_Title_Result.cs" />
@@ -163,7 +167,7 @@
       <Name>EngineAgnosticLayerDbAccess</Name>
     </ProjectReference>
     <ProjectReference Include="..\SobekCM_Core\SobekCM_Core.csproj">
-      <Project>{849C78A5-C60B-4FAF-9EFB-943753F64E56}</Project>
+      <Project>{849c78a5-c60b-4faf-9efb-943753f64e56}</Project>
       <Name>SobekCM_Core</Name>
     </ProjectReference>
     <ProjectReference Include="..\SobekCM_Resource_Database\SobekCM_Resource_Database.csproj">

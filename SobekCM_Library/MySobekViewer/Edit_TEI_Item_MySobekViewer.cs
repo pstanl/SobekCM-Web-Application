@@ -113,16 +113,6 @@ namespace SobekCM.Library.MySobekViewer
             bibid = RequestSpecificValues.Current_Mode.BibID;
             vid = RequestSpecificValues.Current_Mode.VID;
 
-            // Ensure the item is valid
-            RequestSpecificValues.Tracer.Add_Trace("Edit_Item_Metadata_MySobekViewer.Constructor", "Validate bibid/vid exists");
-            if (!UI_ApplicationCache_Gateway.Items.Contains_BibID_VID(bibid, vid))
-            {
-                RequestSpecificValues.Tracer.Add_Trace("Edit_Item_Metadata_MySobekViewer.Constructor", "BibID/VID indicated is not valid", Custom_Trace_Type_Enum.Error);
-                RequestSpecificValues.Current_Mode.Mode = Display_Mode_Enum.Error;
-                RequestSpecificValues.Current_Mode.Error_Message = "Invalid Request : BibID/VID indicated is not valid";
-                return;
-            }
-
             // Determine the in process directory for this
             if (RequestSpecificValues.Current_User.ShibbID.Trim().Length > 0)
                 userInProcessDirectory = Path.Combine(UI_ApplicationCache_Gateway.Settings.Servers.In_Process_Submission_Location, RequestSpecificValues.Current_User.ShibbID, "teiedit", bibid + "_" + vid);
@@ -621,33 +611,33 @@ namespace SobekCM.Library.MySobekViewer
                 // Add the TEI viewer
                 SobekCM_Item_Database.Save_Item_Add_Viewer(Item_To_Complete.Web.ItemID, "TEI", new_tei_file.Replace(".xml", "").Replace(".XML", "") + " (TEI)", new_tei_file);
 
-                // Create the static html pages
-                string base_url = RequestSpecificValues.Current_Mode.Base_URL;
-                try
-                {
-                    Static_Pages_Builder staticBuilder = new Static_Pages_Builder(UI_ApplicationCache_Gateway.Settings.Servers.System_Base_URL, UI_ApplicationCache_Gateway.Settings.Servers.Base_Data_Directory, RequestSpecificValues.HTML_Skin.Skin_Code);
-                    string filename = userInProcessDirectory + "\\" + Item_To_Complete.BibID + "_" + Item_To_Complete.VID + ".html";
-                    staticBuilder.Create_Item_Citation_HTML(Item_To_Complete, filename, String.Empty);
+                //// Create the static html pages
+                //string base_url = RequestSpecificValues.Current_Mode.Base_URL;
+                //try
+                //{
+                //    Static_Pages_Builder staticBuilder = new Static_Pages_Builder(UI_ApplicationCache_Gateway.Settings.Servers.System_Base_URL, UI_ApplicationCache_Gateway.Settings.Servers.Base_Data_Directory, RequestSpecificValues.HTML_Skin.Skin_Code);
+                //    string filename = userInProcessDirectory + "\\" + Item_To_Complete.BibID + "_" + Item_To_Complete.VID + ".html";
+                //    staticBuilder.Create_Item_Citation_HTML(Item_To_Complete, filename, String.Empty);
 
-                    // Copy the static HTML file to the web server
-                    try
-                    {
-                        if (!Directory.Exists(UI_ApplicationCache_Gateway.Settings.Servers.Static_Pages_Location + item.BibID.Substring(0, 2) + "\\" + item.BibID.Substring(2, 2) + "\\" + item.BibID.Substring(4, 2) + "\\" + item.BibID.Substring(6, 2) + "\\" + item.BibID.Substring(8)))
-                            Directory.CreateDirectory(UI_ApplicationCache_Gateway.Settings.Servers.Static_Pages_Location + item.BibID.Substring(0, 2) + "\\" + item.BibID.Substring(2, 2) + "\\" + item.BibID.Substring(4, 2) + "\\" + item.BibID.Substring(6, 2) + "\\" + item.BibID.Substring(8));
-                        if (File.Exists(userInProcessDirectory + "\\" + item.BibID + "_" + item.VID + ".html"))
-                            File.Copy(userInProcessDirectory + "\\" + item.BibID + "_" + item.VID + ".html", UI_ApplicationCache_Gateway.Settings.Servers.Static_Pages_Location + item.BibID.Substring(0, 2) + "\\" + item.BibID.Substring(2, 2) + "\\" + item.BibID.Substring(4, 2) + "\\" + item.BibID.Substring(6, 2) + "\\" + item.BibID.Substring(8) + "\\" + item.BibID + "_" + item.VID + ".html", true);
-                    }
-                    catch (Exception)
-                    {
-                        // This is not critical
-                    }
-                }
-                catch (Exception)
-                {
-                    // An error here is not catastrophic
-                }
+                //    // Copy the static HTML file to the web server
+                //    try
+                //    {
+                //        if (!Directory.Exists(UI_ApplicationCache_Gateway.Settings.Servers.Static_Pages_Location + item.BibID.Substring(0, 2) + "\\" + item.BibID.Substring(2, 2) + "\\" + item.BibID.Substring(4, 2) + "\\" + item.BibID.Substring(6, 2) + "\\" + item.BibID.Substring(8)))
+                //            Directory.CreateDirectory(UI_ApplicationCache_Gateway.Settings.Servers.Static_Pages_Location + item.BibID.Substring(0, 2) + "\\" + item.BibID.Substring(2, 2) + "\\" + item.BibID.Substring(4, 2) + "\\" + item.BibID.Substring(6, 2) + "\\" + item.BibID.Substring(8));
+                //        if (File.Exists(userInProcessDirectory + "\\" + item.BibID + "_" + item.VID + ".html"))
+                //            File.Copy(userInProcessDirectory + "\\" + item.BibID + "_" + item.VID + ".html", UI_ApplicationCache_Gateway.Settings.Servers.Static_Pages_Location + item.BibID.Substring(0, 2) + "\\" + item.BibID.Substring(2, 2) + "\\" + item.BibID.Substring(4, 2) + "\\" + item.BibID.Substring(6, 2) + "\\" + item.BibID.Substring(8) + "\\" + item.BibID + "_" + item.VID + ".html", true);
+                //    }
+                //    catch (Exception)
+                //    {
+                //        // This is not critical
+                //    }
+                //}
+                //catch (Exception)
+                //{
+                //    // An error here is not catastrophic
+                //}
 
-                RequestSpecificValues.Current_Mode.Base_URL = base_url;
+                //RequestSpecificValues.Current_Mode.Base_URL = base_url;
 
                 // Save the rest of the metadata
                 Item_To_Complete.Save_SobekCM_METS();
@@ -704,9 +694,6 @@ namespace SobekCM.Library.MySobekViewer
                     File.Copy(thisFile, destination_file, true);
                 }
 
-                // Add this to the cache
-                UI_ApplicationCache_Gateway.Items.Add_SobekCM_Item(Item_To_Complete);
-
                 // Now, delete all the files here
                 string[] all_files = Directory.GetFiles(userInProcessDirectory);
                 foreach (string thisFile in all_files)
@@ -715,7 +702,7 @@ namespace SobekCM.Library.MySobekViewer
                 }
 
                 // Always set the additional work needed flag, to give the builder a  chance to look at it
-                SobekCM_Database.Update_Additional_Work_Needed_Flag(Item_To_Complete.Web.ItemID, true, Tracer);
+                SobekCM_Item_Database.Update_Additional_Work_Needed_Flag(Item_To_Complete.Web.ItemID, true);
 
 
 

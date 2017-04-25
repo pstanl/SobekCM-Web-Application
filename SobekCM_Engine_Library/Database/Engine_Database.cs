@@ -20,6 +20,8 @@ using SobekCM.Core.WebContent;
 using SobekCM.Core.WebContent.Hierarchy;
 using SobekCM.Core.WebContent.Single;
 using SobekCM.Engine_Library.ApplicationState;
+using SobekCM.Resource_Object;
+using SobekCM.Resource_Object.Behaviors;
 using SobekCM.Tools;
 
 #endregion
@@ -137,6 +139,8 @@ namespace SobekCM.Engine_Library.Database
 			{
 				Tracer.Add_Trace("Engine_Database.Get_Item_Details", "");
 			}
+
+		    Last_Exception = null;
 
 			try
 			{
@@ -1229,47 +1233,6 @@ namespace SobekCM.Engine_Library.Database
 			}
 		}
 
-		/// <summary> Verified the item lookup object is filled, or populates the item lookup object with all the valid bibids and vids in the system </summary>
-		/// <param name="AlwaysRefresh"> Flag indicates if this should be refreshed, whether or not the item lookup object is filled </param>
-		/// <param name="IncludePrivate"> Flag indicates whether to include private items in this list </param>
-		/// <param name="ItemLookupObject"> Item lookup object to directly populate from the database </param>
-		/// <param name="Tracer"> Trace object keeps a list of each method executed and important milestones in rendering</param>
-		/// <returns> TRUE if successful or if the object is already filled, otherwise FALSE </returns>
-		/// <remarks> This calls the 'SobekCM_Item_List_Web' stored procedure </remarks> 
-		internal static bool Verify_Item_Lookup_Object(bool AlwaysRefresh, bool IncludePrivate, Item_Lookup_Object ItemLookupObject, Custom_Tracer Tracer)
-		{
-			if (Tracer != null)
-			{
-				Tracer.Add_Trace("Engine_Database.Verify_Item_Lookup_Object", String.Empty);
-			}
-
-			// If no database string, don't try to connect
-			if (String.IsNullOrEmpty(Connection_String))
-				return false;
-
-			lock (itemListPopulationLock)
-			{
-				bool updateList = true;
-				if (( !AlwaysRefresh ) && ( ItemLookupObject != null))
-				{
-					TimeSpan sinceLastUpdate = DateTime.Now.Subtract(ItemLookupObject.Last_Updated);
-					if (sinceLastUpdate.TotalMinutes <= 1)
-						updateList = false;
-				}
-
-				if (!updateList)
-				{
-					return true;
-				}
-
-				// Have the database popoulate the little bit of bibid/vid information we retain
-				bool returnValue = Populate_Item_Lookup_Object(IncludePrivate, ItemLookupObject, Tracer);
-				if ((returnValue) && ( ItemLookupObject != null ))
-					ItemLookupObject.Last_Updated = DateTime.Now;
-				return returnValue;
-			}
-		}
-
         /// <summary> Gets the item dataset, usually used to populate the item list </summary>
         /// <param name="IncludePrivate"> Flag indicates whether to include private items in this list </param>
         /// <param name="Tracer"> Trace object keeps a list of each method executed and important milestones in rendering</param>
@@ -1306,77 +1269,6 @@ namespace SobekCM.Engine_Library.Database
                 return null;
             }
         }
-
-		/// <summary> Populates the item lookup object with all the valid bibids and vids in the system </summary>
-		/// <param name="IncludePrivate"> Flag indicates whether to include private items in this list </param>
-		/// <param name="ItemLookupObject"> Item lookup object to directly populate from the database </param>
-		/// <param name="Tracer"> Trace object keeps a list of each method executed and important milestones in rendering</param>
-		/// <returns> TRUE if successful, otherwise FALSE </returns>
-		/// <remarks> This calls the 'SobekCM_Item_List_Web' stored procedure </remarks> 
-		public static bool Populate_Item_Lookup_Object(bool IncludePrivate, Item_Lookup_Object ItemLookupObject, Custom_Tracer Tracer)
-		{
-			if (Tracer != null)
-			{
-				Tracer.Add_Trace("Engine_Database.Populate_Item_Lookup_Object", String.Empty);
-			}
-
-			try
-			{
-				// Create the parameter list
-				EalDbParameter[] parameters = new EalDbParameter[1];
-				parameters[0] = new EalDbParameter("@include_private", IncludePrivate);
-
-				// Get the data reader (wrapper)
-				EalDbReaderWrapper readerWrapper = EalDbAccess.ExecuteDataReader(DatabaseType, Connection_String + "Connection Timeout=45", CommandType.StoredProcedure, "SobekCM_Item_List", parameters);
-
-				// Pull out the database reader
-				DbDataReader reader = readerWrapper.Reader;
-
-				// Clear existing volumes
-				ItemLookupObject.Clear();
-				ItemLookupObject.Last_Updated = DateTime.Now;
-
-				string currentBibid = String.Empty;
-				Multiple_Volume_Item currentVolume = null;
-				while (reader.Read())
-				{
-					// Grab the values out
-					string newBib = reader.GetString(0);
-					string newVid = reader.GetString(1);
-					short newMask = reader.GetInt16(2);
-					string title = reader.GetString(3);
-
-					// Create a new multiple volume object?
-					if (newBib != currentBibid)
-					{
-						currentBibid = newBib;
-						currentVolume = new Multiple_Volume_Item(newBib);
-						ItemLookupObject.Add_Title(currentVolume);
-					}
-
-					// Add this volume
-					Single_Item newItem = new Single_Item(newVid, newMask, title);
-					if (currentVolume != null) currentVolume.Add_Item(newItem);
-				}
-
-				// Close the reader (which also closes the connection)
-				readerWrapper.Close();
-
-				// Return the first table from the returned dataset
-				return true;
-			}
-			catch (Exception ee)
-			{
-				Last_Exception = ee;
-				if (Tracer != null)
-				{
-					Tracer.Add_Trace("Engine_Database.Populate_Item_Lookup_Object", "Exception caught during database work", Custom_Trace_Type_Enum.Error);
-					Tracer.Add_Trace("Engine_Database.Populate_Item_Lookup_Object", ee.Message, Custom_Trace_Type_Enum.Error);
-					Tracer.Add_Trace("Engine_Database.Populate_Item_Lookup_Object", ee.StackTrace, Custom_Trace_Type_Enum.Error);
-				}
-				return false;
-			}
-		}
 
 		#region Methods to perform database searches
 
@@ -1847,6 +1739,103 @@ namespace SobekCM.Engine_Library.Database
 			// Return the built result arguments
 			return returnArgs;
 		}
+        
+
+        /// <summary> Returns the basic metadata ( as if it was a search ) when searching by BibID/VID pairs </summary>
+        /// <param name="AggregationCode"> Code for the aggregation of interest ( or empty string to search all aggregationPermissions )</param>
+        /// <param name="BibID1"> BibID for the first BibID/VID pair to search for </param>
+        /// <param name="VID1"> VID for the first BibID/VID pair to search for </param>
+        /// <param name="BibID2"> BibID for the second BibID/VID pair to search for </param>
+        /// <param name="VID2"> VID for the second BibID/VID pair to search for </param>
+        /// <param name="BibID3"> BibID for the third BibID/VID pair to search for </param>
+        /// <param name="VID3"> VID for the third BibID/VID pair to search for </param>
+        /// <param name="BibID4"> BibID for the fourth BibID/VID pair to search for </param>
+        /// <param name="VID4"> VID for the fourth BibID/VID pair to search for </param>
+        /// <param name="BibID5"> BibID for the fifth BibID/VID pair to search for </param>
+        /// <param name="VID5"> VID for the fifth BibID/VID pair to search for </param>
+        /// <param name="BibID6"> BibID for the sixth BibID/VID pair to search for </param>
+        /// <param name="VID6"> VID for the sixth BibID/VID pair to search for </param>
+        /// <param name="BibID7"> BibID for the seventh BibID/VID pair to search for </param>
+        /// <param name="VID7"> VID for the seventh BibID/VID pair to search for </param>
+        /// <param name="BibID8"> BibID for the eighth BibID/VID pair to search for </param>
+        /// <param name="VID8"> VID for the eighth BibID/VID pair to search for </param>
+        /// <param name="BibID9"> BibID for the ninth BibID/VID pair to search for </param>
+        /// <param name="VID9"> VID for the ninth BibID/VID pair to search for </param>
+        /// <param name="BibID10"> BibID for the last BibID/VID pair to search for </param>
+        /// <param name="VID10"> VID for the last BibID/VID pair to search for </param>
+        /// <param name="Tracer"> Trace object keeps a list of each method executed and important milestones in rendering</param>
+        /// <returns> Small arguments object which contains the page of results and optionally statistics about results for the entire search, including complete counts and facet information </returns>
+        /// <remarks> This calls the 'SobekCM_Metadata_By_Bib_Vid' stored procedure </remarks>
+        public static Database_Results_Info Metadata_By_Bib_Vid(string AggregationCode, string BibID1, string VID1, string BibID2, string VID2, 
+            string BibID3, string VID3, string BibID4, string VID4, string BibID5, string VID5, string BibID6, string VID6, string BibID7, string VID7,
+            string BibID8, string VID8, string BibID9, string VID9, string BibID10, string VID10, Custom_Tracer Tracer)
+        {
+            if (Tracer != null)
+            {
+                Tracer.Add_Trace("Engine_Database.Metadata_By_Bib_Vid", "Performing basic search in database  ( stored procedure SobekCM_Metadata_By_Bib_Vid )");
+            }
+
+            if (AggregationCode.ToUpper() == "ALL")
+                AggregationCode = String.Empty;
+
+            // Build the list of parameters
+            List<EalDbParameter> parameters = new List<EalDbParameter>
+			{
+                new EalDbParameter("@aggregationcode", AggregationCode), 
+                new EalDbParameter("@bibid1", BibID1), 
+                new EalDbParameter("@vid1", VID1), 
+                new EalDbParameter("@bibid2", BibID2), 
+                new EalDbParameter("@vid2", VID2),
+                new EalDbParameter("@bibid3", BibID3), 
+                new EalDbParameter("@vid3", VID3),
+                new EalDbParameter("@bibid4", BibID4), 
+                new EalDbParameter("@vid4", VID4),
+                new EalDbParameter("@bibid5", BibID5), 
+                new EalDbParameter("@vid5", VID5),
+                new EalDbParameter("@bibid6", BibID6), 
+                new EalDbParameter("@vid6", VID6),
+                new EalDbParameter("@bibid7", BibID7), 
+                new EalDbParameter("@vid7", VID7),
+                new EalDbParameter("@bibid8", BibID8), 
+                new EalDbParameter("@vid8", VID8),
+                new EalDbParameter("@bibid9", BibID9), 
+                new EalDbParameter("@vid9", VID9),
+                new EalDbParameter("@bibid10", BibID10), 
+                new EalDbParameter("@vid10", VID10)
+			};
+
+            // Create the database agnostic reader
+            EalDbReaderWrapper readerWrapper = EalDbAccess.ExecuteDataReader(DatabaseType, Connection_String + "Connection Timeout=45", CommandType.StoredProcedure, "SobekCM_Metadata_By_Bib_Vid", parameters);
+
+            // Pull out the database reader
+            DbDataReader reader = readerWrapper.Reader;
+
+            // Create the return argument object
+            List<string> metadataLabels = new List<string>();
+            List<List<iSearch_Title_Result>> results = DataReader_To_Result_List_With_LookAhead2(reader, 100, metadataLabels);
+
+            // Copy this over
+            Database_Results_Info returnArgs = new Database_Results_Info();
+            if ((results != null) && (results.Count != 0))
+            {
+                foreach (List<iSearch_Title_Result> resultsPage in results)
+                {
+                    foreach (Database_Title_Result thisResult in resultsPage)
+                    {
+                        returnArgs.Results.Add(thisResult);
+                    }
+                }
+            }
+
+            // Save the metadata labels in the stats portion
+            returnArgs.Metadata_Labels = metadataLabels;
+
+            // Close the reader
+            readerWrapper.Close();
+
+            // Return the built result arguments
+            return returnArgs;
+        }
 
 		private static List<List<iSearch_Title_Result>> DataReader_To_Result_List_With_LookAhead2(DbDataReader Reader, int ResultsPerPage, List<string> MetadataFieldNames )
 		{
@@ -6998,6 +6987,599 @@ namespace SobekCM.Engine_Library.Database
         }
 
         #endregion
+
+        #region Properties used by the SobekCM Builder (moved from the bib package and subsequently the SobekCM_Database)
+
+        /// <summary> Gets the script from the database used for collection building </summary>
+        /// <remarks> This calls the 'SobekCM_Get_ColBuild_Script' stored procedure </remarks> 
+        public static DataTable CollectionBuild_Script
+        {
+            get
+            {
+                try
+                {
+                    DataSet tempSet = EalDbAccess.ExecuteDataset(DatabaseType, Connection_String, CommandType.StoredProcedure, "SobekCM_Get_ColBuild_Script");
+                    return tempSet.Tables[0];
+                }
+                catch (Exception ee)
+                {
+                    Last_Exception = ee;
+                    return null;
+                }
+            }
+        }
+
+
+        /// <summary> Gets the values from the builder settings table in the database </summary>
+        /// <param name="Tracer"> Trace object keeps a list of each method executed and important milestones in rendering</param>
+        /// <returns> Dictionary of all the keys and values in the builder settings table </returns>
+        /// <remarks> This calls the 'SobekCM_Get_Settings' stored procedure </remarks> 
+        public static Dictionary<string, string> Get_Settings(Custom_Tracer Tracer)
+        {
+            Dictionary<string, string> returnValue = new Dictionary<string, string>();
+
+            try
+            {
+
+                DataSet tempSet = EalDbAccess.ExecuteDataset(DatabaseType, Connection_String, CommandType.StoredProcedure, "SobekCM_Get_Settings");
+                if ((tempSet.Tables.Count > 0) && (tempSet.Tables[0].Rows.Count > 0))
+                {
+                    foreach (DataRow thisRow in tempSet.Tables[0].Rows)
+                    {
+                        returnValue[thisRow["Setting_Key"].ToString()] = thisRow["Setting_Value"].ToString();
+                    }
+                }
+            }
+            catch (Exception ee)
+            {
+                Last_Exception = ee;
+            }
+
+            return returnValue;
+        }
+
+        /// <summary> Sets a value for an individual user's setting </summary>
+        /// <param name="UserID"> Primary key for this user in the database </param>
+        /// <param name="SettingKey"> Key for the setting to update or insert </param>
+        /// <param name="SettingValue"> Value for the setting to update or insert </param>
+        /// <returns> TRUE if successful, otherwise FALSE </returns>
+        /// <remarks> This calls the 'SobekCM_Set_User_Setting_Value' stored procedure </remarks> 
+        public static bool Set_User_Setting(int UserID, string SettingKey, string SettingValue)
+        {
+            try
+            {
+                // Execute this non-query stored procedure
+                EalDbParameter[] paramList = new EalDbParameter[3];
+                paramList[0] = new EalDbParameter("@UserID", UserID);
+                paramList[1] = new EalDbParameter("@Setting_Key", SettingKey);
+                paramList[2] = new EalDbParameter("@Setting_Value", SettingValue);
+
+                EalDbAccess.ExecuteNonQuery(DatabaseType, Connection_String, CommandType.StoredProcedure, "SobekCM_Set_User_Setting_Value", paramList);
+                return true;
+            }
+            catch (Exception ee)
+            {
+                Last_Exception = ee;
+                return false;
+            }
+        }
+
+        /// <summary> Sets a value in the settings table </summary>
+        /// <param name="SettingKey"> Key for the setting to update or insert </param>
+        /// <param name="SettingValue"> Value for the setting to update or insert </param>
+        /// <returns> TRUE if successful, otherwise FALSE </returns>
+        /// <remarks> This calls the 'SobekCM_Set_Setting_Value' stored procedure </remarks> 
+        public static bool Set_Setting(string SettingKey, string SettingValue)
+        {
+            try
+            {
+                // Execute this non-query stored procedure
+                EalDbParameter[] paramList = new EalDbParameter[2];
+                paramList[0] = new EalDbParameter("@Setting_Key", SettingKey);
+                paramList[1] = new EalDbParameter("@Setting_Value", SettingValue);
+
+                EalDbAccess.ExecuteNonQuery(DatabaseType, Connection_String, CommandType.StoredProcedure, "SobekCM_Set_Setting_Value", paramList);
+                return true;
+            }
+            catch (Exception ee)
+            {
+                Last_Exception = ee;
+                return false;
+            }
+        }
+
+
+        /// <summary> Delete a value from the settings table </summary>
+        /// <param name="SettingKey"> Key for the setting to update or insert </param>
+        /// <returns> TRUE if successful, otherwise FALSE </returns>
+        /// <remarks> This calls the 'SobekCM_Delete_Settinge' stored procedure </remarks> 
+        public static bool Delete_Setting(string SettingKey)
+        {
+            try
+            {
+                // Execute this non-query stored procedure
+                EalDbParameter[] paramList = new EalDbParameter[1];
+                paramList[0] = new EalDbParameter("@Setting_Key", SettingKey);
+
+                EalDbAccess.ExecuteNonQuery(DatabaseType, Connection_String, CommandType.StoredProcedure, "SobekCM_Delete_Setting", paramList);
+                return true;
+            }
+            catch (Exception ee)
+            {
+                Last_Exception = ee;
+                return false;
+            }
+        }
+
+        /// <summary> Gets settings across all the users that are like the key start </summary>
+        /// <param name="KeyStart"> Beginning or entire key to return settings for.  Since this uses like, you can pass 
+        /// in a string like 'TEI.%' and that will return all the values that have a setting key that STARTS with 'TEI.' </param>
+        /// <param name="SettingValue"> If SettingValue is NULL, then all settings that match are returned.  If a 
+        /// value is provided then only the settings that match the key search and have the same value in the 
+        /// database as SettingValue are returned.  This is particularly useful for boolean settings, where you 
+        /// only want to the see the settings set to 'true'</param>
+        /// <returns> DataTable with matching user settings  </returns>
+        /// <remarks> This calls the 'mySobek_Get_All_User_Settings_Like' stored procedure </remarks> 
+        public static DataTable Get_All_User_Settings_Like(string KeyStart, string SettingValue)
+        {
+            try
+            {
+                // Execute this non-query stored procedure
+                EalDbParameter[] paramList = new EalDbParameter[2];
+                paramList[0] = new EalDbParameter("@keyStart", KeyStart);
+
+                if (SettingValue == null)
+                    paramList[1] = new EalDbParameter("@value", DBNull.Value);
+                else
+                    paramList[1] = new EalDbParameter("@value", SettingValue);
+
+                DataSet resultSet = EalDbAccess.ExecuteDataset(DatabaseType, Connection_String, CommandType.StoredProcedure, "mySobek_Get_All_User_Settings_Like", paramList);
+                return resultSet.Tables[0];
+            }
+            catch (Exception ee)
+            {
+                Last_Exception = ee;
+                return null;
+            }
+        }
+
+        #endregion
+
+        #region Methods used by the SobekCM Builder  (moved from bib package)
+
+        /// <summary> Gets list of item groups (BibID's) for inclusion in the production MarcXML load </summary>
+        /// <value> Datatable with the list of records </value>
+        /// <remarks> This calls the 'SobekCM_MarcXML_Production_Feed' stored procedure </remarks>
+        public static DataTable MarcXML_Production_Feed_Records
+        {
+            get
+            {
+                Last_Exception = null;
+                try
+                {
+                    // Define a temporary dataset
+                    DataSet tempSet = EalDbAccess.ExecuteDataset(DatabaseType, Connection_String, CommandType.StoredProcedure, "SobekCM_MarcXML_Production_Feed");
+
+                    // Return the first table from the returned dataset
+                    return tempSet.Tables[0];
+                }
+                catch (Exception ee)
+                {
+                    Last_Exception = ee;
+                    return null;
+                }
+            }
+        }
+
+        /// <summary> Gets list of item groups (BibID's) for inclusion in the test MarcXML load </summary>
+        /// <value> Datatable with the list of records </value>
+        /// <remarks> This calls the 'SobekCM_MarcXML_Test_Feed' stored procedure </remarks>
+        public static DataTable MarcXML_Test_Feed_Records
+        {
+            get
+            {
+                Last_Exception = null;
+                try
+                {
+                    // Define a temporary dataset
+                    DataSet tempSet = EalDbAccess.ExecuteDataset(DatabaseType, Connection_String, CommandType.StoredProcedure, "SobekCM_MarcXML_Test_Feed");
+
+                    // Return the first table from the returned dataset
+                    return tempSet.Tables[0];
+                }
+                catch (Exception ee)
+                {
+                    Last_Exception = ee;
+                    return null;
+                }
+            }
+        }
+
+        /// <summary>method used to set the new items flag of a specified item aggregation</summary>
+        /// <param name="AggregationCode">Code for this SobekCM item aggregation</param>
+        /// <param name="NewItemFlag">Status for the new item flag</param>
+        /// <returns>TRUE if successful, otherwise FALSE</returns>
+        /// <remarks> This method calls the stored procedure 'SobekCM_Set_Aggregation_NewItem_Flag'. </remarks>
+        public static bool Set_Aggregation_NewItem_Flag(string AggregationCode, bool NewItemFlag)
+        {
+            try
+            {
+                // Build the parameter list
+                EalDbParameter[] paramList = new EalDbParameter[2];
+                paramList[0] = new EalDbParameter("@code", AggregationCode);
+                paramList[1] = new EalDbParameter("@newitemflag", NewItemFlag);
+                // Execute this non-query stored procedure
+                EalDbAccess.ExecuteNonQuery(DatabaseType, Connection_String, CommandType.StoredProcedure, "SobekCM_Set_Aggregation_NewItem_Flag", paramList);
+                return true;
+            }
+            catch (Exception ee)
+            {
+                Last_Exception = ee;
+                return false;
+            }
+        }
+
+
+        /// <summary> Get a list of collections which have new items and are ready to be built</summary>
+        /// <returns> DataTable of collections waiting to be built</returns>
+        /// <remarks> This method calls the stored procedure 'SobekCM_Get_CollectionList_toBuild'. </remarks>
+        public static DataTable Get_CollectionList_ReadyToBuild()
+        {
+            try
+            {
+                DataSet tempSet = EalDbAccess.ExecuteDataset(DatabaseType, Connection_String, CommandType.StoredProcedure, "SobekCM_Get_CollectionList_toBuild");
+                return tempSet.Tables[0];
+            }
+            catch (Exception ee)
+            {
+                Last_Exception = ee;
+                return null;
+            }
+        }
+
+
+        /// <summary> Deletes an item from the SobekCM database</summary>
+        /// <param name="BibID"> Bibliographic identifier for the item to delete</param>
+        /// <param name="VID"> Volume identifier for the item to delete</param>
+        /// <param name="AsAdmin"> Indicates this is an admin, who can delete ANY item, not just those without archives attached </param>
+        /// <param name="DeleteMessage"> Message to include on any archive remnants after an admin delete </param>
+        /// <returns> TRUE if successful, otherwise FALSE</returns>
+        /// <remarks> This method calls the stored procedure 'SobekCM_Delete_Item'. <br /><br />
+        /// This just marks a flag on the item (and item group) as deleted, it does not actually remove the data from the database</remarks>
+        public static bool Delete_SobekCM_Item(string BibID, string VID, bool AsAdmin, string DeleteMessage)
+        {
+            try
+            {
+                // build the parameter list
+                EalDbParameter[] paramList = new EalDbParameter[4];
+                paramList[0] = new EalDbParameter("@bibid", BibID);
+                paramList[1] = new EalDbParameter("@vid", VID);
+                paramList[2] = new EalDbParameter("@as_admin", AsAdmin);
+                paramList[3] = new EalDbParameter("@delete_message", DeleteMessage);
+
+                //Execute this non-query stored procedure
+                EalDbAccess.ExecuteNonQuery(DatabaseType, Connection_String, CommandType.StoredProcedure, "SobekCM_Delete_Item", paramList);
+                return true;
+            }
+            catch (Exception ee)
+            {
+                Last_Exception = ee;
+                return false;
+            }
+        }
+
+        #endregion
+
+        #region Methods relating to the build error logs
+
+        /// <summary> Gets the list of build errors that have been encountered between two dates </summary>
+        /// <param name="Tracer"> Trace object keeps a list of each method executed and important milestones in rendering</param>
+        /// <param name="StartDate"> Beginning of the date range </param>
+        /// <param name="EndDate"> End of the date range</param>
+        /// <returns> Datatable of all the build errors encountered </returns>
+        /// <remarks> This calls the 'SobekCM_Get_Build_Error_Logs' stored procedure </remarks>
+        public static DataTable Builder_Get_Error_Logs(Custom_Tracer Tracer, DateTime StartDate, DateTime EndDate)
+        {
+            if (Tracer != null)
+            {
+                Tracer.Add_Trace("SobekCM_Database.Get_Build_Error_Logs", "Pulling data from database");
+            }
+
+            try
+            {
+                // Execute this query stored procedure
+                EalDbParameter[] paramList = new EalDbParameter[2];
+                paramList[0] = new EalDbParameter("@firstdate", StartDate);
+                paramList[1] = new EalDbParameter("@seconddate", EndDate);
+                DataSet tempSet = EalDbAccess.ExecuteDataset(DatabaseType, Connection_String, CommandType.StoredProcedure, "SobekCM_Get_Build_Error_Logs", paramList);
+                return tempSet.Tables[0];
+            }
+            catch (Exception ee)
+            {
+                Last_Exception = ee;
+                if (Tracer != null)
+                {
+                    Tracer.Add_Trace("SobekCM_Database.Get_Build_Error_Logs", "Exception caught during database work", Custom_Trace_Type_Enum.Error);
+                    Tracer.Add_Trace("SobekCM_Database.Get_Build_Error_Logs", ee.Message, Custom_Trace_Type_Enum.Error);
+                    Tracer.Add_Trace("SobekCM_Database.Get_Build_Error_Logs", ee.StackTrace, Custom_Trace_Type_Enum.Error);
+                }
+                return null;
+            }
+        }
+
+        /// <summary> Clears the item error log associated with a particular bibid / vid </summary>
+        /// <param name="BibID"> Bibliographic identifier for the item (or name of failed process)</param>
+        /// <param name="Vid"> Volume identifier for the item </param>
+        /// <param name="ClearedBy"> Name of user or process that cleared the error </param>
+        /// <returns>TRUE if successful, otherwise FALSE</returns>
+        /// <remarks> No error is deleted, but this does set a flag on the error indicating it was cleared so it will no longer appear in the list<br /><br />
+        /// This calls the 'SobekCM_Clear_Item_Error_Log' stored procedure </remarks>
+        public static bool Builder_Clear_Item_Error_Log(string BibID, string Vid, string ClearedBy)
+        {
+            // Note, this is no longer utilized in the new logging system.
+            // Keeping this hook while we consider if we should expire errors in the system.
+            // Will create new online web interfac and then decide
+            return true;
+
+            //try
+            //{
+            //    // build the parameter list
+            //    EalDbParameter[] paramList = new EalDbParameter[3];
+            //    paramList[0] = new EalDbParameter("@BibID", BibID);
+            //    paramList[1] = new EalDbParameter("@VID", Vid);
+            //    paramList[2] = new EalDbParameter("@ClearedBy", ClearedBy);
+
+            //    //Execute this non-query stored procedure
+            //    EalDbAccess.ExecuteNonQuery(DatabaseType, connectionString, CommandType.StoredProcedure, "SobekCM_Clear_Item_Error_Log", paramList);
+            //    return true;
+            //}
+            //catch (Exception ee)
+            //{
+            //    lastException = ee;
+            //    return false;
+            //}
+        }
+
+        /// <summary> Expire older builder logs which can be removed from the system </summary>
+        /// <param name="Retain_For_Days"> Number of days of logs which should be retained </param>
+        /// <returns> TRUE if successful, otherwise FALSE </returns>
+        /// <remarks> This calls the 'SobekCM_Builder_Expire_Log_Entries' stored procedure </remarks>
+        public static bool Builder_Expire_Log_Entries(int Retain_For_Days)
+        {
+            try
+            {
+                // build the parameter list
+                EalDbParameter[] paramList = new EalDbParameter[1];
+                paramList[0] = new EalDbParameter("@Retain_For_Days", Retain_For_Days);
+
+                //Execute this non-query stored procedure
+                EalDbAccess.ExecuteNonQuery(DatabaseType, Connection_String, CommandType.StoredProcedure, "SobekCM_Builder_Expire_Log_Entries", paramList);
+                return true;
+            }
+            catch (Exception ee)
+            {
+                Last_Exception = ee;
+                return false;
+            }
+        }
+
+        /// <summary> Add a new log entry for the builder </summary>
+        /// <param name="RelatedBuilderLogID"> Primary key for a related log id, if this adds detail to an already logged entry </param>
+        /// <param name="BibID_VID"> BibID / VID, if this is related to an item error (either existing item, or not) </param>
+        /// <param name="LogType"> Type of the log entry ( i.e., Error, Complete, etc.. )</param>
+        /// <param name="LogMessage"> Actual log entry message </param>
+        /// <param name="MetsType"> Type of the METS file (if related to one) </param>
+        /// <returns> The primary key for this new log entry, in case detail logs need to be added </returns>
+        /// <remarks> This calls the 'SobekCM_Builder_Add_Log' stored procedure </remarks>
+        public static long Builder_Add_Log_Entry(long RelatedBuilderLogID, string BibID_VID, string LogType, string LogMessage, string MetsType)
+        {
+            try
+            {
+                // build the parameter list
+                EalDbParameter[] paramList = new EalDbParameter[6];
+                if (RelatedBuilderLogID < 0)
+                    paramList[0] = new EalDbParameter("@RelatedBuilderLogID", DBNull.Value);
+                else
+                    paramList[0] = new EalDbParameter("@RelatedBuilderLogID", RelatedBuilderLogID);
+
+                paramList[1] = new EalDbParameter("@BibID_VID", BibID_VID);
+                paramList[2] = new EalDbParameter("@LogType", LogType);
+                paramList[3] = new EalDbParameter("@LogMessage", LogMessage);
+                paramList[4] = new EalDbParameter("@Mets_Type", MetsType);
+                paramList[5] = new EalDbParameter("@BuilderLogID", -1) { Direction = ParameterDirection.InputOutput };
+
+                //Execute this non-query stored procedure
+                EalDbAccess.ExecuteNonQuery(DatabaseType, Connection_String, CommandType.StoredProcedure, "SobekCM_Builder_Add_Log", paramList);
+                return Convert.ToInt64(paramList[5].Value);
+            }
+            catch (Exception ee)
+            {
+                Last_Exception = ee;
+                return -1;
+            }
+        }
+
+        #endregion
+
+
+        /// <summary> Pulls the item id, main thumbnail, and aggregation codes and adds them to the resource object </summary>
+        /// <param name="Resource"> Digital resource object </param>
+        /// <returns> TRUE if successful, otherwise FALSE </returns>
+        /// <remarks> This calls the 'SobekCM_Builder_Get_Minimum_Item_Information' stored procedure </remarks> 
+        public static bool Add_Minimum_Builder_Information(SobekCM_Item Resource)
+        {
+            try
+            {
+                EalDbParameter[] parameters = new EalDbParameter[2];
+                parameters[0] = new EalDbParameter("@bibid", Resource.BibID);
+                parameters[1] = new EalDbParameter("@vid", Resource.VID);
+
+                // Define a temporary dataset
+                DataSet tempSet = EalDbAccess.ExecuteDataset(DatabaseType, Connection_String, CommandType.StoredProcedure, "SobekCM_Builder_Get_Minimum_Item_Information", parameters);
+
+                // If there was no data for this collection and entry point, return null (an ERROR occurred)
+                if ((tempSet.Tables.Count == 0) || (tempSet.Tables[0] == null) || (tempSet.Tables[0].Rows.Count == 0))
+                {
+                    return false;
+                }
+
+                // Get the item id and the thumbnail from the first table
+                Resource.Web.ItemID = Convert.ToInt32(tempSet.Tables[0].Rows[0][0]);
+                Resource.Behaviors.Main_Thumbnail = tempSet.Tables[0].Rows[0][1].ToString();
+                Resource.Behaviors.IP_Restriction_Membership = Convert.ToInt16(tempSet.Tables[0].Rows[0][2]);
+                Resource.Tracking.Born_Digital = Convert.ToBoolean(tempSet.Tables[0].Rows[0][3]);
+                Resource.Web.Siblings = Convert.ToInt32(tempSet.Tables[0].Rows[0][4]) - 1;
+                Resource.Behaviors.Dark_Flag = Convert.ToBoolean(tempSet.Tables[0].Rows[0]["Dark"]);
+
+                // Add the aggregation codes
+                Resource.Behaviors.Clear_Aggregations();
+                foreach (DataRow thisRow in tempSet.Tables[1].Rows)
+                {
+                    string code = thisRow[0].ToString();
+                    Resource.Behaviors.Add_Aggregation(code);
+                }
+
+                // Add the icons
+                Resource.Behaviors.Clear_Wordmarks();
+                foreach (DataRow iconRow in tempSet.Tables[2].Rows)
+                {
+                    string image = iconRow[0].ToString();
+                    string link = iconRow[1].ToString().Replace("&", "&amp;").Replace("\"", "&quot;");
+                    string code = iconRow[2].ToString();
+                    string name = iconRow[3].ToString();
+                    if (name.Length == 0)
+                        name = code.Replace("&", "&amp;").Replace("\"", "&quot;");
+
+                    string html;
+                    if (link.Length == 0)
+                    {
+                        html = "<img class=\"SobekItemWordmark\" src=\"<%BASEURL%>design/wordmarks/" + image + "\" title=\"" + name + "\" alt=\"" + name + "\" />";
+                    }
+                    else
+                    {
+                        if (link[0] == '?')
+                        {
+                            html = "<a href=\"" + link + "\"><img class=\"SobekItemWordmark\" src=\"<%BASEURL%>design/wordmarks/" + image + "\" title=\"" + name + "\" alt=\"" + name + "\" /></a>";
+                        }
+                        else
+                        {
+                            html = "<a href=\"" + link + "\" target=\"_blank\"><img class=\"SobekItemWordmark\" src=\"<%BASEURL%>design/wordmarks/" + image + "\" title=\"" + name + "\" alt=\"" + name + "\" /></a>";
+                        }
+                    }
+
+                    Wordmark_Info newIcon = new Wordmark_Info { HTML = html, Link = link, Title = name, Code = code };
+                    Resource.Behaviors.Add_Wordmark(newIcon);
+                }
+
+                // Add the web skins
+                Resource.Behaviors.Clear_Web_Skins();
+                foreach (DataRow skinRow in tempSet.Tables[3].Rows)
+                {
+                    Resource.Behaviors.Add_Web_Skin(skinRow[0].ToString().ToUpper());
+                }
+
+                // Add the views
+                Resource.Behaviors.Clear_Views();
+                foreach (DataRow viewRow in tempSet.Tables[4].Rows)
+                {
+                    string viewType = viewRow[0].ToString();
+                    string attributes = viewRow[1].ToString();
+                    string label = viewRow[2].ToString();
+                    double menuOrder = Double.Parse(viewRow[3].ToString());
+                    bool exclude = Boolean.Parse(viewRow[4].ToString());
+
+                    // Create new database title object for this
+                    View_Object result = new View_Object
+                    {
+                        View_Type = viewType,
+                        Attributes = attributes,
+                        Label = label,
+                        MenuOrder = (float)menuOrder,
+                        Exclude = exclude
+                    };
+
+                    Resource.Behaviors.Add_View(result);
+                }
+
+                // Return the first table from the returned dataset
+                return true;
+            }
+            catch (Exception ee)
+            {
+                Last_Exception = ee;
+                return false;
+            }
+        }
+
+        /// <summary> Pulls the item id by BibID / VID </summary>
+        /// <param name="BibID"> Bibliographic identifier for the digital resource object </param>
+        /// <param name="VID"> Volume identifier for the digital resource object </param>
+        /// <returns> Primary key for this item from the database </returns>
+        /// <remarks> This calls the 'SobekCM_Builder_Get_Minimum_Item_Information' stored procedure </remarks> 
+        public static int Get_ItemID_From_Bib_VID(string BibID, string VID)
+        {
+            try
+            {
+                EalDbParameter[] parameters = new EalDbParameter[2];
+                parameters[0] = new EalDbParameter("@bibid", BibID);
+                parameters[1] = new EalDbParameter("@vid", VID);
+
+                // Define a temporary dataset
+                DataSet tempSet = EalDbAccess.ExecuteDataset(DatabaseType, Connection_String, CommandType.StoredProcedure, "SobekCM_Builder_Get_Minimum_Item_Information", parameters);
+
+                // If there was no data for this collection and entry point, return null (an ERROR occurred)
+                if ((tempSet.Tables.Count == 0) || (tempSet.Tables[0] == null) || (tempSet.Tables[0].Rows.Count == 0))
+                {
+                    return -1;
+                }
+
+                // Get the item id and the thumbnail from the first table
+                return Convert.ToInt32(tempSet.Tables[0].Rows[0][0]);
+            }
+            catch (Exception ee)
+            {
+                Last_Exception = ee;
+                return -1;
+            }
+        }
+
+
+        /// <summary> Updates the cached links between aggregationPermissions and metadata, used by larger collections </summary>
+        /// <returns> TRUE if successful, otherwise FALSE </returns>
+        /// <remarks> This calls the 'Admin_Update_Cached_Aggregation_Metadata_Links' stored procedure.<br /><br />This runs asychronously as this routine may run for a minute or more.</remarks>
+        public static bool Admin_Update_Cached_Aggregation_Metadata_Links()
+        {
+            try
+            {
+                EalDbAccess.BeginExecuteNonQuery(DatabaseType, Connection_String, CommandType.StoredProcedure, "Admin_Update_Cached_Aggregation_Metadata_Links");
+
+                return true;
+            }
+            catch (Exception ee)
+            {
+                Last_Exception = ee;
+                return false;
+
+            }
+        }
+
+        /// <summary> Gets the list of all items currently flagged for needing additional work </summary>
+        /// <remarks> This calls the 'SobekCM_Get_Items_Needing_Aditional_Work' stored procedure. </remarks>
+        public static DataTable Items_Needing_Aditional_Work
+        {
+            get
+            {
+                try
+                {
+                    DataSet returnSet = EalDbAccess.ExecuteDataset(DatabaseType, Connection_String, CommandType.StoredProcedure, "SobekCM_Get_Items_Needing_Aditional_Work");
+                    return returnSet.Tables[0];
+                }
+                catch
+                {
+                    return null;
+                }
+            }
+        }
 
     }
 }

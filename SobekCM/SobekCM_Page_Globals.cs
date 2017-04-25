@@ -105,7 +105,7 @@ namespace SobekCM
 			            baseDir = baseDir + "\\";
                     UI_ApplicationCache_Gateway.Settings.Servers.Base_Directory = baseDir;
 
-                    SobekCM_Database.Set_Setting("Application Server Network", baseDir);
+                    Engine_Database.Set_Setting("Application Server Network", baseDir);
 			    }
 
                 // Ensure the web server IP address is set correctly
@@ -116,7 +116,7 @@ namespace SobekCM
 			        {
                         UI_ApplicationCache_Gateway.Settings.Servers.SobekCM_Web_Server_IP = ip;
 
-                        SobekCM_Database.Set_Setting("SobekCM Web Server IP", ip);
+                        Engine_Database.Set_Setting("SobekCM Web Server IP", ip);
 			        }
 			    }
 
@@ -194,7 +194,7 @@ namespace SobekCM
 			    currentMode = new Navigation_Object();
 			    NameValueCollection queryString = request.QueryString;
 
-			    QueryString_Analyzer.Parse_Query(queryString, currentMode, base_url, request.UserLanguages, UI_ApplicationCache_Gateway.Aggregations, UI_ApplicationCache_Gateway.Collection_Aliases, UI_ApplicationCache_Gateway.Items, UI_ApplicationCache_Gateway.URL_Portals, UI_ApplicationCache_Gateway.WebContent_Hierarchy, tracer);
+			    QueryString_Analyzer.Parse_Query(queryString, currentMode, base_url, request.UserLanguages, UI_ApplicationCache_Gateway.Aggregations, UI_ApplicationCache_Gateway.Collection_Aliases, UI_ApplicationCache_Gateway.URL_Portals, UI_ApplicationCache_Gateway.WebContent_Hierarchy, UI_ApplicationCache_Gateway.Settings.System.Custom_BibID_RegEx, tracer);
 
                 currentMode.Base_URL=base_url;
 			    currentMode.isPostBack = isPostBack;
@@ -1136,7 +1136,7 @@ namespace SobekCM
 
 
 				SobekCM_Assistant assistant = new SobekCM_Assistant();
-                assistant.Get_Search_Results(currentMode, UI_ApplicationCache_Gateway.Items, hierarchyObject, UI_ApplicationCache_Gateway.Search_Stop_Words, tracer, out searchResultStatistics, out pagedSearchResults);
+                assistant.Get_Search_Results(currentMode, hierarchyObject, UI_ApplicationCache_Gateway.Search_Stop_Words, tracer, out searchResultStatistics, out pagedSearchResults);
 
 				if ((!currentMode.isPostBack) && (UI_ApplicationCache_Gateway.Search_History != null))
 				{
@@ -1212,7 +1212,7 @@ namespace SobekCM
 				// For EXPORT option, include ALL the items
 				int results_per_page = 20;
 				int current_page = currentMode.Page.HasValue ? currentMode.Page.Value : 1;
-				if (currentMode.Result_Display_Type == Result_Display_Type_Enum.Export)
+				if ( String.Equals(currentMode.Result_Display_Type, "export", StringComparison.OrdinalIgnoreCase))
 				{
 					results_per_page = 10000;
 					current_page = 1;

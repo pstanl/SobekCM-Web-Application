@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Policy;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Web;
 using SobekCM.Core.ApplicationState;
 using SobekCM.Core.Configuration;
@@ -15,6 +16,7 @@ using SobekCM.Core.Navigation;
 using SobekCM.Core.WebContent.Hierarchy;
 using SobekCM.Engine_Library.ApplicationState;
 using SobekCM.Engine_Library.Database;
+using SobekCM.Resource_Object;
 using SobekCM.Tools;
 
 #endregion
@@ -41,7 +43,7 @@ namespace SobekCM.Engine_Library.Navigation
 	    /// <param name="User_Languages"> Languages preferred by user, per their browser settings </param>
 	    /// <param name="Code_Manager"> List of valid collection codes, including mapping from the Sobek collections to Greenstone collections </param>
 	    /// <param name="Aggregation_Aliases"> List of all existing aliases for existing aggregationPermissions</param>
-	    /// <param name="All_Items_Lookup"> [REF] Lookup object used to pull basic information about any item loaded into this library</param>
+        /// <param name="Custom_BibID_RegEx"> Custom regular expression which can be used for BibID checks, rather than the default checks </param>
 	    /// <param name="URL_Portals"> List of all web portals into this system </param>
 	    /// <param name="WebHierarchy"> Hierarchy of all non-aggregational web content pages and redirects </param>
 	    /// <param name="Tracer"> Trace object keeps a list of each method executed and important milestones in rendering</param>
@@ -51,9 +53,9 @@ namespace SobekCM.Engine_Library.Navigation
 			string[] User_Languages,
 			Aggregation_Code_Manager Code_Manager,
 			Dictionary<string, string> Aggregation_Aliases,
-			Item_Lookup_Object All_Items_Lookup,
 			Portal_List URL_Portals,
             WebContent_Hierarchy WebHierarchy,
+            string Custom_BibID_RegEx,
 			Custom_Tracer Tracer )
 		{
 		    if (Tracer != null)
@@ -342,36 +344,7 @@ namespace SobekCM.Engine_Library.Navigation
 									// Look for result display type
 									if (url_relative_list.Count >=3 )
 									{
-										switch (url_relative_list[2])
-										{
-											case "brief":
-												Navigator.Result_Display_Type = Result_Display_Type_Enum.Brief;
-												break;
-											case "export":
-												Navigator.Result_Display_Type = Result_Display_Type_Enum.Export;
-												break;
-											case "citation":
-												Navigator.Result_Display_Type = Result_Display_Type_Enum.Full_Citation;
-												break;
-											case "image":
-												Navigator.Result_Display_Type = Result_Display_Type_Enum.Full_Image;
-												break;
-											case "map":
-												Navigator.Result_Display_Type = Result_Display_Type_Enum.Map;
-												break;
-                                            case "mapbeta":
-                                                Navigator.Result_Display_Type = Result_Display_Type_Enum.Map_Beta;
-                                                break;
-											case "table":
-												Navigator.Result_Display_Type = Result_Display_Type_Enum.Table;
-												break;
-											case "thumbs":
-												Navigator.Result_Display_Type = Result_Display_Type_Enum.Thumbnails;
-												break;
-											default: 
-												Navigator.Result_Display_Type = Result_Display_Type_Enum.Brief;
-												break;
-										}
+									    Navigator.Result_Display_Type = url_relative_list[2];
 									}
 
 
@@ -539,53 +512,23 @@ namespace SobekCM.Engine_Library.Navigation
 
 										case "bookshelf":
 											Navigator.My_Sobek_Type = My_Sobek_Type_Enum.Folder_Management;
-											Navigator.Result_Display_Type = Result_Display_Type_Enum.Bookshelf;
+											Navigator.Result_Display_Type = "bookshelf";
 											if (url_relative_list.Count > 2)
 											{
 												Navigator.My_Sobek_SubMode = url_relative_list[2];
 												if (url_relative_list.Count > 3)
 												{
-													switch (Navigator.My_Sobek_SubMode)
-													{
-														case "brief":
-															Navigator.Result_Display_Type = Result_Display_Type_Enum.Brief;
-															Navigator.My_Sobek_SubMode = url_relative_list[3];
-															break;
-
-														case "export":
-															Navigator.Result_Display_Type = Result_Display_Type_Enum.Export;
-															Navigator.My_Sobek_SubMode = url_relative_list[3];
-															break;
-
-														case "thumbs":
-															Navigator.Result_Display_Type = Result_Display_Type_Enum.Thumbnails;
-															Navigator.My_Sobek_SubMode = url_relative_list[3];
-															break;
-
-														case "table":
-															Navigator.Result_Display_Type = Result_Display_Type_Enum.Table;
-															Navigator.My_Sobek_SubMode = url_relative_list[3];
-															break;
-
-														case "citation":
-															Navigator.Result_Display_Type = Result_Display_Type_Enum.Full_Citation;
-															Navigator.My_Sobek_SubMode = url_relative_list[3];
-															break;
-
-														case "image":
-															Navigator.Result_Display_Type = Result_Display_Type_Enum.Full_Image;
-															Navigator.My_Sobek_SubMode = url_relative_list[3];
-															break;
-
-														default:
-															if (is_String_Number(url_relative_list[3]))
-															{
-																ushort page_result;
-																UInt16.TryParse(url_relative_list[3], out page_result);
-																Navigator.Page = page_result;
-															}
-															break;
-													}
+												    if (is_String_Number(url_relative_list[3]))
+												    {
+												        ushort page_result;
+												        UInt16.TryParse(url_relative_list[3], out page_result);
+												        Navigator.Page = page_result;
+												    }
+												    else
+												    {
+												        Navigator.Result_Display_Type = url_relative_list[3];
+												        Navigator.My_Sobek_SubMode = url_relative_list[3];
+												    }
 												}
 												if ((url_relative_list.Count > 4) && ( is_String_Number( url_relative_list[4] )))
 												{
@@ -988,6 +931,17 @@ namespace SobekCM.Engine_Library.Navigation
                                 }
                                 break;
 
+                            case "empty":
+                                Navigator.Mode = Display_Mode_Enum.Empty;
+						        if (url_relative_list.Count > 1)
+						        {
+						            Navigator.Base_Skin = Navigator.Skin;
+						            Navigator.Skin = url_relative_list[1];
+						            Navigator.Skin_In_URL = true;
+						        }
+						        break;
+
+
 							case "all":
 							case "new":
 							case "edit":
@@ -1109,7 +1063,7 @@ namespace SobekCM.Engine_Library.Navigation
 									// Perform all aggregation_style checks next
 									aggregation_querystring_analyze( Navigator, QueryString, url_relative_list[0], url_relative_list.GetRange(1, url_relative_list.Count - 1 ));
 								}
-								else if (All_Items_Lookup.Contains_BibID(url_relative_list[0].ToUpper()))
+                                else if (is_bibid_format(url_relative_list[0], Custom_BibID_RegEx))
 								{
 									// This is a BibID for an existing title with at least one public item
 									Navigator.BibID = url_relative_list[0].ToUpper();
@@ -1119,10 +1073,25 @@ namespace SobekCM.Engine_Library.Navigation
 									int current_list_index = 1;
 									if (url_relative_list.Count > 1)
 									{
-										string possible_vid = url_relative_list[1].Trim().PadLeft(5, '0');
-										if ((All_Items_Lookup.Contains_BibID_VID(Navigator.BibID, possible_vid)) || ( possible_vid == "00000" ))
+									    string possible_vid = url_relative_list[1].Trim();
+									    bool success = true;
+									    foreach (char thisChar in possible_vid)
+									    {
+									        if (!Char.IsNumber(thisChar))
+									        {
+									            possible_vid = "00000";
+									            success = false;
+									            break;
+									        }
+									    }
+
+									    if (possible_vid.Length == 5)
+									        Navigator.VID = possible_vid;
+									    else
+									        Navigator.VID = possible_vid.PadLeft(5, '0');
+
+										if ( success )
 										{
-											Navigator.VID = possible_vid;
 											current_list_index++;
 										}                                            
 									}
@@ -1277,6 +1246,29 @@ namespace SobekCM.Engine_Library.Navigation
 
 		#endregion
 
+	    private static bool is_bibid_format(string BibID, string Custom_BibID_RegEx)
+	    {
+	        // Is there a custom BibID regex?
+	        if (!String.IsNullOrEmpty(Custom_BibID_RegEx))
+	        {
+	            try
+	            {
+                    // Instantiate the regular expression object.
+                    Regex r = new Regex(Custom_BibID_RegEx, RegexOptions.IgnoreCase);
+
+                    // Match the regular expression pattern against a text string.
+                    Match m = r.Match(BibID);
+	                return m.Success;
+	            }
+	            catch (Exception)
+	            {
+	                // Do nothing here.. will use the old format
+	            }
+	        }
+
+	        return SobekCM_Item.is_bibid_format(BibID);
+	    }
+
 	    private static string[] copy_remaining_segments_as_array(List<string> url_relative_list, int start_index)
 	    {
 	        if (url_relative_list.Count <= start_index)
@@ -1323,7 +1315,9 @@ namespace SobekCM.Engine_Library.Navigation
 			{
 				switch (RemainingURLRedirectList[0])
 				{
-
+                    case "empty":
+                        Navigator.Aggregation_Type = Aggregation_Type_Enum.Empty;
+                        break;
 
 					case "edit":
 						Navigator.Aggregation_Type = Aggregation_Type_Enum.Home_Edit;
@@ -1475,7 +1469,6 @@ namespace SobekCM.Engine_Library.Navigation
 						}
 						Navigator.Mode = Display_Mode_Enum.Results;
 						Navigator.Search_Type = Search_Type_Enum.Basic;
-						Navigator.Result_Display_Type = Result_Display_Type_Enum.Default;
 						Navigator.Page = 1;
 						Navigator.Sort = 0;
 						if ((HttpContext.Current != null) && (HttpContext.Current.Session != null) && (HttpContext.Current.Session["User_Default_Sort"] != null))
@@ -1486,41 +1479,11 @@ namespace SobekCM.Engine_Library.Navigation
 						// Look for result display type
 						if (RemainingURLRedirectList.Count > search_handled_args)
 						{
-							switch (RemainingURLRedirectList[search_handled_args])
-							{
-								case "brief":
-									Navigator.Result_Display_Type = Result_Display_Type_Enum.Brief;
-									search_handled_args++;
-									break;
-								case "export":
-									Navigator.Result_Display_Type = Result_Display_Type_Enum.Export;
-									search_handled_args++;
-									break;
-								case "citation":
-									Navigator.Result_Display_Type = Result_Display_Type_Enum.Full_Citation;
-									search_handled_args++;
-									break;
-								case "image":
-									Navigator.Result_Display_Type = Result_Display_Type_Enum.Full_Image;
-									search_handled_args++;
-									break;
-								case "map":
-									Navigator.Result_Display_Type = Result_Display_Type_Enum.Map;
-									search_handled_args++;
-									break;
-                                case "mapbeta":
-                                    Navigator.Result_Display_Type = Result_Display_Type_Enum.Map_Beta;
-                                    search_handled_args++;
-                                    break;
-								case "table":
-									Navigator.Result_Display_Type = Result_Display_Type_Enum.Table;
-									search_handled_args++;
-									break;
-								case "thumbs":
-									Navigator.Result_Display_Type = Result_Display_Type_Enum.Thumbnails;
-									search_handled_args++;
-									break;
-							}
+						    if (!is_String_Number(RemainingURLRedirectList[search_handled_args]))
+						    {
+						        Navigator.Result_Display_Type = RemainingURLRedirectList[search_handled_args];
+						        search_handled_args++;
+						    }
 						}
 
 						// Look for a page number
@@ -1620,7 +1583,6 @@ namespace SobekCM.Engine_Library.Navigation
 						Navigator.Mode = Display_Mode_Enum.Aggregation;
 						Navigator.Aggregation_Type = Aggregation_Type_Enum.Browse_Info;
 						Navigator.Info_Browse_Mode = RemainingURLRedirectList[0];
-						Navigator.Result_Display_Type = Result_Display_Type_Enum.Default;
 						Navigator.Page = 1;
 						Navigator.Sort = 0;
 						if ((HttpContext.Current != null) && (HttpContext.Current.Session != null) && (HttpContext.Current.Session["User_Default_Sort"] != null))
@@ -1630,45 +1592,19 @@ namespace SobekCM.Engine_Library.Navigation
 						// Look for result display type
 						if (RemainingURLRedirectList.Count > aggr_handled_args)
 						{
-							switch ( RemainingURLRedirectList[ aggr_handled_args ] )
-							{
-								case "brief":
-									Navigator.Result_Display_Type = Result_Display_Type_Enum.Brief;
-									aggr_handled_args++;
-									break;
-								case "export":
-									Navigator.Result_Display_Type = Result_Display_Type_Enum.Export;
-									aggr_handled_args++;
-									break;
-								case "citation":
-									Navigator.Result_Display_Type = Result_Display_Type_Enum.Full_Citation;
-									aggr_handled_args++;
-									break;
-								case "image":
-									Navigator.Result_Display_Type = Result_Display_Type_Enum.Full_Image;
-									aggr_handled_args++;
-									break;
-								case "map":
-									Navigator.Result_Display_Type = Result_Display_Type_Enum.Map;
-									aggr_handled_args++;
-									break;
-                                case "mapbeta":
-                                    Navigator.Result_Display_Type = Result_Display_Type_Enum.Map_Beta;
-                                    aggr_handled_args++;
-                                    break;
-								case "table":
-									Navigator.Result_Display_Type = Result_Display_Type_Enum.Table;
-									aggr_handled_args++;
-									break;
-								case "thumbs":
-									Navigator.Result_Display_Type = Result_Display_Type_Enum.Thumbnails;
-									aggr_handled_args++;
-									break;
-								case "edit":
-									Navigator.Aggregation_Type = Aggregation_Type_Enum.Child_Page_Edit;
-									aggr_handled_args++;
-									break;
-							}
+						    string selectedView = RemainingURLRedirectList[aggr_handled_args];
+						    if (!is_String_Number(selectedView))
+						    {
+						        if (String.Compare(selectedView, "edit", StringComparison.OrdinalIgnoreCase) == 0)
+						        {
+                                    Navigator.Aggregation_Type = Aggregation_Type_Enum.Child_Page_Edit;
+						        }
+						        else
+						        {
+						            Navigator.Result_Display_Type = selectedView;
+						        }
+						        aggr_handled_args++;
+						    }
 						}
 
 						// Look for a page number

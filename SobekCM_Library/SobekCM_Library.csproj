@@ -112,6 +112,7 @@
     <Compile Include="AggregationViewer\HtmlHeadWriters\iAggregationHtmlHeadWriter.cs" />
     <Compile Include="AggregationViewer\HtmlHeadWriters\JSON_AggregationHtmlHeadWriter.cs" />
     <Compile Include="AggregationViewer\Viewers\Basic_Text_Search_Combined_AggregationViewer.cs" />
+    <Compile Include="AggregationViewer\Viewers\Empty_AggregationViewer.cs" />
     <Compile Include="AggregationViewer\Viewers\Manage_Menu_AggregationViewer.cs" />
     <Compile Include="AggregationViewer\Viewers\Advanced_Search_MimeType_AggregationViewer.cs" />
     <Compile Include="AggregationViewer\Viewers\Basic_Search_MimeType_AggregationViewer.cs" />
@@ -124,7 +125,8 @@
     <Compile Include="AggregationViewer\Viewers\Tiles_Home_AggregationViewer.cs" />
     <Compile Include="AggregationViewer\Viewers\User_Permissions_AggregationViewer.cs" />
     <Compile Include="AggregationViewer\Viewers\Work_History_AggregationViewer.cs" />
-    <Compile Include="Citation\Elements\base types\checkBox_Element.cs" />
+    <Compile Include="Citation\Elements\base types\CheckBox_Element.cs" />
+    <Compile Include="Citation\Elements\HtmlEventsHelper.cs" />
     <Compile Include="Citation\Elements\implemented elements\Additional_Work_Needed_Element.cs" />
     <Compile Include="Citation\Elements\implemented elements\Born_Digital_Element.cs" />
     <Compile Include="Citation\Elements\implemented elements\Catalog_Record_Number_Element.cs" />
@@ -144,7 +146,6 @@
     <Compile Include="Citation\Elements\implemented elements\ETD_DegreeDivision_Element.cs" />
     <Compile Include="Citation\Elements\implemented elements\ETD_DegreeGrantor_Element.cs" />
     <Compile Include="Citation\Elements\implemented elements\ETD_DegreeLevel_Element.cs" />
-    <Compile Include="Citation\Elements\implemented elements\ETD_GraduationDate_Element.cs" />
     <Compile Include="Citation\Elements\implemented elements\ETD_GraduationSemester_Element.cs" />
     <Compile Include="Citation\Elements\implemented elements\FAST_Subject_Element.cs" />
     <Compile Include="Citation\Elements\implemented elements\Frequency_Element.cs" />
@@ -190,16 +191,23 @@
     <Compile Include="Helpers\AceEditor\AceEditor.cs" />
     <Compile Include="Helpers\CKEditor\CKEditor.cs" />
     <Compile Include="Helpers\CKEditor\CKEditor_Security_Token.cs" />
+    <Compile Include="HtmlLayout\HtmlLayoutInfo.cs" />
+    <Compile Include="HtmlLayout\HtmlLayoutManager.cs" />
+    <Compile Include="HtmlLayout\HtmlLayoutParser.cs" />
+    <Compile Include="HtmlLayout\HtmlLayoutSection.cs" />
     <Compile Include="HTML\Admin_HtmlSubwriter.cs" />
+    <Compile Include="HTML\Empty_HtmlSubwriter.cs" />
     <Compile Include="HTML\HeaderFooter_Helper_HtmlSubWriter.cs" />
     <Compile Include="HTML\HtmlSubwriter_Behaviors_Enum.cs" />
-    <Compile Include="HTML\Item_HtmlSubwriter_Legacy.cs" />
+    <Compile Include="HTML\Item_HtmlSubwriter_Last.cs" />
     <Compile Include="HTML\MainMenus_Helper_HtmlSubWriter.cs" />
     <Compile Include="ItemViewer\HtmlHeadWriters\DublinCore_ItemHtmlHeadWriter.cs" />
     <Compile Include="ItemViewer\HtmlHeadWriters\iItemHtmlHeadWriter.cs" />
+    <Compile Include="ItemViewer\HtmlHeadWriters\ItemHtmlHeadWriter_Factory.cs" />
     <Compile Include="ItemViewer\HtmlHeadWriters\MODS_ItemHtmlHeadWriter.cs" />
     <Compile Include="ItemViewer\HtmlHeadWriters\OpenGraph_ItemHtmlHeadWriter.cs" />
     <Compile Include="ItemViewer\HtmlSectionWriters\iItemSectionWriter.cs" />
+    <Compile Include="ItemViewer\HtmlSectionWriters\ItemSectionWriter_Factory.cs" />
     <Compile Include="ItemViewer\HtmlSectionWriters\StandardMenu_ItemSectionWriter.cs" />
     <Compile Include="ItemViewer\HtmlSectionWriters\TitleBar_ItemSectionWriter.cs" />
     <Compile Include="ItemViewer\HtmlSectionWriters\TOC_ItemSectionWriter.cs" />
@@ -212,6 +220,7 @@
     <Compile Include="ItemViewer\Viewers\abstractItemViewerPrototyper.cs" />
     <Compile Include="ItemViewer\Viewers\abstractNoPaginationItemViewer.cs" />
     <Compile Include="ItemViewer\Viewers\abstractPageFilesItemViewer.cs" />
+    <Compile Include="ItemViewer\Viewers\Downloads_JP2s_ItemViewer.cs" />
     <Compile Include="ItemViewer\Viewers\SearchEngineIndexing_ItemViewer.cs" />
     <Compile Include="ItemViewer\Viewers\TEI_ItemViewer.cs" />
     <Compile Include="ItemViewer\Viewers\UF_Archives_ItemViewer.cs" />
@@ -356,6 +365,7 @@
     <Compile Include="MySobekViewer\New_TEI_MySobekViewer.cs" />
     <Compile Include="RequestCache.cs" />
     <Compile Include="ResultsViewer\Google_Map_ResultsViewer_Beta.cs" />
+    <Compile Include="ResultsViewer\ResultsViewer_Factory.cs" />
     <Compile Include="TEI\TEI_Configuration.cs" />
     <Compile Include="UI\UI_ApplicationCache_Gateway.cs" />
     <Compile Include="Helpers\UploadiFive\UploadiFive_Settings.cs" />
@@ -389,7 +399,7 @@
     <Compile Include="Citation\Elements\implemented elements\Other_URL_Element.cs" />
     <Compile Include="Citation\Elements\nonstandard elements\Abstract_Complex_Element.cs" />
     <Compile Include="Citation\Elements\abstract_Element.cs" />
-    <Compile Include="Citation\Elements\base types\multipleComboBox_Element.cs" />
+    <Compile Include="Citation\Elements\base types\MultipleComboBox_Element.cs" />
     <Compile Include="Citation\Elements\implemented elements\Attribution_Element.cs" />
     <Compile Include="Citation\Elements\implemented elements\Coordinates_Point_Element.cs" />
     <Compile Include="Citation\Elements\implemented elements\Creator_Complex_Element.cs" />
@@ -397,11 +407,11 @@
     <Compile Include="Citation\Elements\implemented elements\Encoding_Level_Element.cs" />
     <Compile Include="Citation\Elements\implemented elements\Aggregations_Element.cs" />
     <Compile Include="Citation\Elements\implemented elements\Abstract_Summary_Element.cs" />
-    <Compile Include="Citation\Elements\base types\comboBox_Element.cs" />
-    <Compile Include="Citation\Elements\base types\comboBox_TextBox_Element.cs" />
-    <Compile Include="Citation\Elements\base types\multipleTextBox_Element.cs" />
-    <Compile Include="Citation\Elements\base types\simpleTextBox_Element.cs" />
-    <Compile Include="Citation\Elements\base types\textBox_TextBox_Element.cs" />
+    <Compile Include="Citation\Elements\base types\ComboBox_Element.cs" />
+    <Compile Include="Citation\Elements\base types\ComboBox_TextBox_Element.cs" />
+    <Compile Include="Citation\Elements\base types\MultipleTextBox_Element.cs" />
+    <Compile Include="Citation\Elements\base types\SimpleTextBox_Element.cs" />
+    <Compile Include="Citation\Elements\base types\TextBox_TextBox_Element.cs" />
     <Compile Include="Citation\Elements\implemented elements\BibID_Element.cs" />
     <Compile Include="Citation\Elements\implemented elements\Creator_Notes_Element.cs" />
     <Compile Include="Citation\Elements\implemented elements\Genre_Element.cs" />
@@ -413,8 +423,8 @@
     <Compile Include="Citation\Elements\implemented elements\Subject_Element.cs" />
     <Compile Include="Citation\Elements\implemented elements\Subject_Scheme_Element.cs" />
     <Compile Include="Citation\Elements\implemented elements\Temporal_Coverage_Element.cs" />
-    <Compile Include="Citation\Elements\base types\textArea_Element.cs" />
-    <Compile Include="Citation\Elements\base types\textBox_ComboBox_Element.cs" />
+    <Compile Include="Citation\Elements\base types\TextArea_Element.cs" />
+    <Compile Include="Citation\Elements\base types\TextBox_ComboBox_Element.cs" />
     <Compile Include="Citation\Elements\implemented elements\Creator_Element.cs" />
     <Compile Include="Citation\Elements\implemented elements\Date_Copyrighted_Element.cs" />
     <Compile Include="Citation\Elements\implemented elements\Date_Element.cs" />
@@ -506,7 +516,7 @@
     <Compile Include="MySobekViewer\NewPassword_MySobekViewer.cs" />
     <Compile Include="MySobekViewer\New_Group_And_Item_MySobekViewer.cs" />
     <Compile Include="MySobekViewer\Preferences_MySobekViewer.cs" />
-    <Compile Include="ResultsViewer\Export_View_ResultsViewer.cs" />
+    <Compile Include="ResultsViewer\Export_ResultsViewer.cs" />
     <Compile Include="HTML\Contact_HtmlSubwriter.cs" />
     <Compile Include="HTML\Error_HtmlSubwriter.cs" />
     <Compile Include="HTML\Item_HtmlSubwriter.cs" />
@@ -514,7 +524,7 @@
     <Compile Include="HTML\PagedResults_HtmlSubwriter.cs" />
     <Compile Include="HTML\Search_Results_HtmlSubwriter.cs" />
     <Compile Include="HTML\Statistics_HtmlSubwriter.cs" />
-    <Compile Include="ItemViewer\ItemViewer_Factory.cs" />
+    <Compile Include="ItemViewer\Viewers\ItemViewer_Factory.cs" />
     <Compile Include="ItemViewer\Viewers\iItemViewer.cs" />
     <Compile Include="MainWriters\Dataset_MainWriter.cs" />
     <Compile Include="MainWriters\abstractMainWriter.cs" />
@@ -523,7 +533,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ResultsViewer\abstract_ResultsViewer.cs" />
     <Compile Include="ResultsViewer\Brief_ResultsViewer.cs" />
-    <Compile Include="ResultsViewer\Full_ResultsViewer.cs" />
     <Compile Include="ResultsViewer\iResultsViewer.cs" />
     <Compile Include="ResultsViewer\Google_Map_ResultsViewer.cs" />
     <Compile Include="ResultsViewer\No_Results_ResultsViewer.cs" />
@@ -538,7 +547,6 @@
     <Compile Include="Static_Pages_Builder.cs" />
     <Compile Include="Text_Search_Term_Highlighter.cs" />
     <Compile Include="Email\URL_Email_Helper.cs" />
-    <Compile Include="Email\Usage_Stats_Email_Helper.cs" />
     <Compile Include="WebContentViewer\Viewers\abstractWebContentViewer.cs" />
     <Compile Include="WebContentViewer\Viewers\Delete_Verify_WebContentViewer.cs" />
     <Compile Include="WebContentViewer\Viewers\Manage_Menu_WebContentViewer.cs" />

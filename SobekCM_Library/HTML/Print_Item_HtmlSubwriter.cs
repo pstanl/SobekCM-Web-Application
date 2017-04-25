@@ -44,20 +44,10 @@ namespace SobekCM.Library.HTML
                 return;
             }
 
-            // Ensure the item is valid
-            RequestSpecificValues.Tracer.Add_Trace("Print_Item_HtmlSubwriter.Constructor", "Validate bibid/vid exists");
-            if (!UI_ApplicationCache_Gateway.Items.Contains_BibID_VID(RequestSpecificValues.Current_Mode.BibID, RequestSpecificValues.Current_Mode.VID))
-            {
-                RequestSpecificValues.Tracer.Add_Trace("Edit_Item_Behaviors_MySobekViewer.Constructor", "BibID/VID indicated is not valid", Custom_Trace_Type_Enum.Error);
-                RequestSpecificValues.Current_Mode.Mode = Display_Mode_Enum.Error;
-                RequestSpecificValues.Current_Mode.Error_Message = "Invalid Request : BibID/VID indicated is not valid";
-                return;
-            }
-
-
 
             RequestSpecificValues.Tracer.Add_Trace("Print_Item_HtmlSubwriter.Constructor", "Try to pull this brief item");
-            currentItem = SobekEngineClient.Items.Get_Item_Brief(RequestSpecificValues.Current_Mode.BibID, RequestSpecificValues.Current_Mode.VID, true, RequestSpecificValues.Tracer);
+            int statusCode;
+            currentItem = SobekEngineClient.Items.Get_Item_Brief(RequestSpecificValues.Current_Mode.BibID, RequestSpecificValues.Current_Mode.VID, true, RequestSpecificValues.Tracer, out statusCode );
             if (currentItem == null)
             {
                 RequestSpecificValues.Tracer.Add_Trace("Print_Item_HtmlSubwriter.Constructor", "Unable to build brief item");
@@ -304,8 +294,7 @@ namespace SobekCM.Library.HTML
             // For this, also need the brief item (OBVIOUSLY NEEDS TO CHANGE!)
 
             Output.WriteLine("<div class=\"SobekCitation\">");
-            Citation_Standard_ItemViewer citationViewer = new Citation_Standard_ItemViewer(currentItem, RequestSpecificValues.Current_User, RequestSpecificValues.Current_Mode);
-            Output.WriteLine(citationViewer.Standard_Citation_String(false,null));
+            Output.WriteLine(Citation_Standard_ItemViewer.Standard_Citation_String(currentItem, RequestSpecificValues.Current_Mode, RequestSpecificValues.Current_User, 850, false, null));
             Output.WriteLine("</div>");
         }
 

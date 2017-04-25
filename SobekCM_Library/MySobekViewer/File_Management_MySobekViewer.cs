@@ -66,16 +66,6 @@ namespace SobekCM.Library.MySobekViewer
                 return;
             }
 
-            // Ensure the item is valid
-            RequestSpecificValues.Tracer.Add_Trace("File_Management_MySobekViewer.Constructor", "Validate bibid/vid exists");
-            if (!UI_ApplicationCache_Gateway.Items.Contains_BibID_VID(RequestSpecificValues.Current_Mode.BibID, RequestSpecificValues.Current_Mode.VID))
-            {
-                RequestSpecificValues.Tracer.Add_Trace("File_Management_MySobekViewer.Constructor", "BibID/VID indicated is not valid", Custom_Trace_Type_Enum.Error);
-                RequestSpecificValues.Current_Mode.Mode = Display_Mode_Enum.Error;
-                RequestSpecificValues.Current_Mode.Error_Message = "Invalid Request : BibID/VID indicated is not valid";
-                return;
-            }
-
             RequestSpecificValues.Tracer.Add_Trace("File_Management_MySobekViewer.Constructor", "Try to pull this sobek complete item");
             currentItem = SobekEngineClient.Items.Get_Sobek_Item(RequestSpecificValues.Current_Mode.BibID, RequestSpecificValues.Current_Mode.VID, RequestSpecificValues.Current_User.UserID, RequestSpecificValues.Tracer);
             if (currentItem == null)
@@ -384,7 +374,7 @@ namespace SobekCM.Library.MySobekViewer
                 // Finally, set the currentItem for more processing if there were any files
                 if (((image_files.Count > 0) || (download_files.Count > 0)) && ( Item_To_Complete.Web.ItemID > 0 ))
                 {
-                    Database.SobekCM_Database.Update_Additional_Work_Needed_Flag(Item_To_Complete.Web.ItemID, true, Tracer);
+                    SobekCM_Item_Database.Update_Additional_Work_Needed_Flag(Item_To_Complete.Web.ItemID, true);
                 }
             }
             catch (Exception ee)

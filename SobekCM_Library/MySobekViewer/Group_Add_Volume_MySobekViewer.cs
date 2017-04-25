@@ -1,6 +1,7 @@
 ﻿#region Using directives
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
@@ -90,16 +91,6 @@ namespace SobekCM.Library.MySobekViewer
                 RequestSpecificValues.Tracer.Add_Trace("Group_Add_Volume_MySobekViewer.Constructor", "BibID was not provided!");
                 RequestSpecificValues.Current_Mode.Mode = Display_Mode_Enum.Error;
                 RequestSpecificValues.Current_Mode.Error_Message = "Invalid Request : BibID missing in item group metadata edit request";
-                return;
-            }
-
-            // Ensure the item is valid
-            RequestSpecificValues.Tracer.Add_Trace("Group_Add_Volume_MySobekViewer.Constructor", "Validate bibid exists");
-            if (!UI_ApplicationCache_Gateway.Items.Contains_BibID(RequestSpecificValues.Current_Mode.BibID))
-            {
-                RequestSpecificValues.Tracer.Add_Trace("Group_Add_Volume_MySobekViewer.Constructor", "BibID indicated is not valid", Custom_Trace_Type_Enum.Error);
-                RequestSpecificValues.Current_Mode.Mode = Display_Mode_Enum.Error;
-                RequestSpecificValues.Current_Mode.Error_Message = "Invalid Request : BibID indicated is not valid";
                 return;
             }
 
@@ -207,7 +198,8 @@ namespace SobekCM.Library.MySobekViewer
                     try
                     {
                         // Get a new instance of this item
-                        SobekCM_Item saveItem = SobekCM_Item_Factory.Get_Item(RequestSpecificValues.Current_Mode.BibID, vid, UI_ApplicationCache_Gateway.Icon_List, RequestSpecificValues.Tracer);
+                        Tuple<SobekCM_Item, SobekCM_Item_Error> itemAndError = SobekCM_Item_Factory.Get_Item(RequestSpecificValues.Current_Mode.BibID, vid, UI_ApplicationCache_Gateway.Icon_List, RequestSpecificValues.Tracer);
+                        SobekCM_Item saveItem = itemAndError.Item1;
                         
                         // Clear some values for this item
                         saveItem.VID = String.Empty;
@@ -406,9 +398,6 @@ namespace SobekCM.Library.MySobekViewer
             Item_To_Complete.Source_Directory = user_in_process_directory;
             Item_To_Complete.Save_SobekCM_METS();
 
-            // Add this to the cache
-            UI_ApplicationCache_Gateway.Items.Add_SobekCM_Item(Item_To_Complete);
-
             Database.SobekCM_Database.Add_Item_To_User_Folder(RequestSpecificValues.Current_User.UserID, "Submitted Items", Item_To_Complete.BibID, Item_To_Complete.VID, 0, String.Empty, Tracer);
 
             // Save Bib_Level METS?
@@ -459,9 +448,6 @@ namespace SobekCM.Library.MySobekViewer
                 string destination_file = serverNetworkFolder + "\\" + (new FileInfo(thisFile)).Name;
                 File.Copy(thisFile, destination_file, true);
             }
-
-            // Add this to the cache
-            UI_ApplicationCache_Gateway.Items.Add_SobekCM_Item(Item_To_Complete);
 
             // Incrememnt the count of number of items submitted by this user
             RequestSpecificValues.Current_User.Items_Submitted_Count++;
@@ -581,17 +567,20 @@ namespace SobekCM.Library.MySobekViewer
                 sortList.Add(itemRowView.VID, itemRowView.VID);
 	        }
 
-	        foreach (string thisVid in sortList.Values)
+            // Select the LAST vid by default
+	        int i = 1;
+            IList<string> sortListValues = sortList.Values;
+            foreach (string thisVid in sortListValues)
 		    {
-			    if (first)
+                if (i == sortListValues.Count )
 			    {
                     Output.WriteLine("          <option value=\"" + thisVid + "\" selected=\"selected\">" + thisVid + "</option>");
-				    first = false;
 			    }
 			    else
 			    {
                     Output.WriteLine("          <option value=\"" + thisVid + "\">" + thisVid + "</option>");
 			    }
+		        i++;
 		    }
 		    Output.WriteLine("        </select>");
 		    Output.WriteLine("      </div>");

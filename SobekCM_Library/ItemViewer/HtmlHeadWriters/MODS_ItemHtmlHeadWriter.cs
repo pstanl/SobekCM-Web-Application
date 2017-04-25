@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using SobekCM.Core.BriefItem;
 using SobekCM.Library.ItemViewer.Viewers;
 
@@ -18,8 +19,10 @@ namespace SobekCM.Library.ItemViewer.HtmlHeadWriters
             if (CurrentItem == null)
                 return;
 
-            Output.WriteLine("     <link title=\"MODS Metadata Schema\" rel=\"schema.mods\" href=\"http://www.loc.gov/standards/mods/mods.xsd\" />");
-            Output.WriteLine("     <meta name=\"mods.title\" content=\"" + CurrentItem.Title.Replace("\"", "'") + "\" />");
+            Output.WriteLine("  <link title=\"MODS Metadata Schema\" rel=\"schema.mods\" href=\"http://www.loc.gov/standards/mods/mods.xsd\" />");
+            if ( !String.IsNullOrEmpty(CurrentItem.Title))
+                Output.WriteLine("  <meta name=\"mods.title\" content=\"" + CurrentItem.Title.Replace("\"", "'") + "\" />");
+            Output.WriteLine();
         }
     }
 }

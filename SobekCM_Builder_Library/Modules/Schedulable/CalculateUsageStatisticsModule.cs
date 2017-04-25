@@ -10,7 +10,7 @@ using SobekCM.Core.ApplicationState;
 using SobekCM.Core.Settings;
 using SobekCM.Engine_Library.ApplicationState;
 using SobekCM.Engine_Library.Database;
-using SobekCM.Library.Email;
+
 
 #endregion
 
@@ -202,9 +202,6 @@ namespace SobekCM.Builder_Library.Modules.Schedulable
             // If no year/months were added , then no work to do
             if (year_month.Count == 0)
                 return;
-
-            // Refresh the items
- //           Engine_ApplicationCache_Gateway.RefreshItems();
 
             // Create the processor
             SobekCM_Stats_Reader_Processor processor = new SobekCM_Stats_Reader_Processor(log_directory, temporary_workspace, sobekcm_directory, year_month);

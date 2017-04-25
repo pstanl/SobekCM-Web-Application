@@ -337,14 +337,14 @@ namespace SobekCM.Library.HTML
 					case Aggregation_Type_Enum.Home_Edit:
 				        if (!hierarchyObject.Custom_Home_Page)
 				        {
-                            //// Are there tiles here?
-                            //string aggregation_tile_directory = Path.Combine(UI_ApplicationCache_Gateway.Settings.Servers.Base_Design_Location, hierarchyObject.ObjDirectory, "images", "tiles");
-                            //if (Directory.Exists(aggregation_tile_directory))
-                            //{
-                            //    string[] jpeg_tiles = Directory.GetFiles(aggregation_tile_directory, "*.jpg");
-                            //    if (jpeg_tiles.Length > 0)
-                            //        collectionViewer = new Tiles_Home_AggregationViewer(RequestSpecificValues, viewBag);
-                            //}
+                            // Are there tiles here?
+                            string aggregation_tile_directory = Path.Combine(UI_ApplicationCache_Gateway.Settings.Servers.Base_Design_Location, hierarchyObject.ObjDirectory, "images", "tiles");
+                            if (Directory.Exists(aggregation_tile_directory))
+                            {
+                                string[] jpeg_tiles = Directory.GetFiles(aggregation_tile_directory, "*.jpg");
+                                if (jpeg_tiles.Length > 0)
+                                    collectionViewer = new Tiles_Home_AggregationViewer(RequestSpecificValues, viewBag);
+                            }
 
                             // If the tiles home page as not built, build the standard viewer
                             if ( collectionViewer == null )
@@ -405,6 +405,10 @@ namespace SobekCM.Library.HTML
 
                     case Aggregation_Type_Enum.Work_History:
                         collectionViewer = new Work_History_AggregationViewer(RequestSpecificValues, viewBag);
+                        break;
+
+                    case Aggregation_Type_Enum.Empty:
+				        collectionViewer = new Empty_AggregationViewer(RequestSpecificValues, viewBag);
                         break;
 				}
 			}
@@ -602,7 +606,7 @@ namespace SobekCM.Library.HTML
             // If this is the thumbnails results, add the QTIP script and css
             if ((datasetBrowseResultsStats != null ) && 
                 ( datasetBrowseResultsStats.Total_Items > 0) &&
-                ( RequestSpecificValues.Current_Mode.Result_Display_Type == Result_Display_Type_Enum.Thumbnails ))
+                ( String.Equals(RequestSpecificValues.Current_Mode.Result_Display_Type, "thumbs", StringComparison.OrdinalIgnoreCase)))
             {
                 Output.WriteLine("  <script type=\"text/javascript\" src=\"" + Static_Resources_Gateway.Jquery_Qtip_Js + "\"></script>");
                 Output.WriteLine("  <link rel=\"stylesheet\" type=\"text/css\" href=\"" + Static_Resources_Gateway.Jquery_Qtip_Css + "\" /> ");
@@ -620,7 +624,16 @@ namespace SobekCM.Library.HTML
                 Output.WriteLine("  <script type=\"text/javascript\" src=\"" + Static_Resources_Gateway.Jquery_Datatables_Js + "\" ></script>");
             }
 
+
+            if ((collectionViewer != null) && (collectionViewer.AggregationViewer_Behaviors.Contains(HtmlSubwriter_Behaviors_Enum.Use_Jquery_Qtip)))
+            {
+                Output.WriteLine("  <link href=\"" + Static_Resources_Gateway.Jquery_Qtip_Css + "\" rel=\"stylesheet\" type=\"text/css\" />");
+                Output.WriteLine("  <script type=\"text/javascript\" src=\"" + Static_Resources_Gateway.Jquery_Qtip_Js + "\" ></script>");
+            }
+
             Output.WriteLine();
+
+
 
             // Add the aggregation html head writers
             DublinCore_AggregationHtmlHeadWriter dcWriter = new DublinCore_AggregationHtmlHeadWriter();
@@ -724,7 +737,7 @@ namespace SobekCM.Library.HTML
 					switch (RequestSpecificValues.Current_Mode.Aggregation_Type)
 					{
 						case Aggregation_Type_Enum.Browse_Info:
-							if (RequestSpecificValues.Current_Mode.Result_Display_Type == Result_Display_Type_Enum.Map)
+							if ( String.Equals(RequestSpecificValues.Current_Mode.Result_Display_Type, "map", StringComparison.OrdinalIgnoreCase))
 							{
 								returnValue.Add(new Tuple<string, string>("onload", "load();"));
 							}
@@ -2073,7 +2086,7 @@ namespace SobekCM.Library.HTML
             // Were there any public folders
             SortedList<string, string> public_folder_list = new SortedList<string, string>();
             RequestSpecificValues.Current_Mode.Mode = Display_Mode_Enum.Public_Folder;
-            RequestSpecificValues.Current_Mode.Result_Display_Type = Result_Display_Type_Enum.Brief;
+            RequestSpecificValues.Current_Mode.Result_Display_Type = "brief";
             RequestSpecificValues.Current_Mode.Aggregation = String.Empty;
             foreach (User_Folder thisFolder in RequestSpecificValues.Current_User.All_Folders.Where(ThisFolder => ThisFolder.IsPublic))
             {

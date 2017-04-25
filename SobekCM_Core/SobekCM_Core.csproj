@@ -20,7 +20,8 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Debug\SobekCM_Core.XML</DocumentationFile>
+    <DocumentationFile>
+    </DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -107,9 +108,24 @@
     <Compile Include="BriefItem\BriefItem_TocElement.cs" />
     <Compile Include="BriefItem\BriefItem_Web.cs" />
     <Compile Include="BriefItem\IBriefItemMapper.cs" />
+    <Compile Include="Builder\Actionable_Builder_Source_Folder.cs" />
     <Compile Include="Builder\Builder_Scheduled_Task_Execution_History.cs" />
     <Compile Include="Builder\Builder_Scheduled_Task_Status.cs" />
     <Compile Include="Builder\Builder_Status.cs" />
+    <Compile Include="Builder\Incoming_Digital_Resource.cs" />
+    <Compile Include="Builder\Modules\abstractFolderModule.cs" />
+    <Compile Include="Builder\Modules\abstractPostProcessModule.cs" />
+    <Compile Include="Builder\Modules\abstractPreProcessModule.cs" />
+    <Compile Include="Builder\Modules\abstractSchedulableModule.cs" />
+    <Compile Include="Builder\Modules\abstractSubmissionPackageModule.cs" />
+    <Compile Include="Builder\Modules\BibVidStruct.cs" />
+    <Compile Include="Builder\Modules\iFolderModule.cs" />
+    <Compile Include="Builder\Modules\iPostProcessModule.cs" />
+    <Compile Include="Builder\Modules\iPreProcessModule.cs" />
+    <Compile Include="Builder\Modules\iSchedulableModule.cs" />
+    <Compile Include="Builder\Modules\iSubmissionPackageModule.cs" />
+    <Compile Include="Builder\Modules\ModuleErrorLoggingDelegate.cs" />
+    <Compile Include="Builder\Modules\ModuleStandardLoggingDelegate.cs" />
     <Compile Include="Configuration\Authentication\Authentication_Configuration.cs" />
     <Compile Include="Configuration\BriefItemMapping_Configuration.cs" />
     <Compile Include="Configuration\Configuration_Source_Info.cs" />
@@ -148,10 +164,14 @@
     <Compile Include="MemoryMgmt\CachedDataManager_BuilderServices.cs" />
     <Compile Include="MemoryMgmt\CachedDataManager_ItemServices.cs" />
     <Compile Include="Builder\Builder_Module_Set_Info.cs" />
+    <Compile Include="Settings\Builder\MultiInstance_Builder_Settings.cs" />
+    <Compile Include="Settings\Builder\MultiInstance_Builder_Settings_Reader.cs" />
+    <Compile Include="Settings\Builder\Single_Instance_Configuration.cs" />
     <Compile Include="Settings\UI_Settings.cs" />
     <Compile Include="UI_Configuration\StaticResources\StaticResources_Configuration.cs" />
     <Compile Include="UI_Configuration\Viewers\AggregationWriterConfig.cs" />
     <Compile Include="UI_Configuration\Viewers\ClassAssemblyConfig.cs" />
+    <Compile Include="UI_Configuration\Viewers\HtmlHeadWriterConfig.cs" />
     <Compile Include="UI_Configuration\Viewers\ItemSubViewerConfig.cs" />
     <Compile Include="UI_Configuration\MapEditor_Configuration.cs" />
     <Compile Include="Configuration\Engine\Engine_Component.cs" />
@@ -244,7 +264,13 @@
     <Compile Include="UI_Configuration\Citation\SectionWriter.cs" />
     <Compile Include="UI_Configuration\InstanceWide_UI_Configuration.cs" />
     <Compile Include="UI_Configuration\Viewers\ItemWriterConfig.cs" />
+    <Compile Include="UI_Configuration\Viewers\ItemWriterLayoutConfig.cs" />
     <Compile Include="UI_Configuration\Viewers\OtherWriterConfig.cs" />
+    <Compile Include="UI_Configuration\Viewers\ResultsSubViewerConfig.cs" />
+    <Compile Include="UI_Configuration\Viewers\ResultsWriterConfig.cs" />
+    <Compile Include="UI_Configuration\Viewers\SectionWriterConfig.cs" />
+    <Compile Include="UI_Configuration\Viewers\SectionWriterGroupConfig.cs" />
+    <Compile Include="UI_Configuration\Viewers\StylesheetConfig.cs" />
     <Compile Include="UI_Configuration\Viewers\WebContentWriterConfig.cs" />
     <Compile Include="UI_Configuration\Viewers\WriterViewerConfig.cs" />
     <Compile Include="UI_Configuration\Viewers\SingleSubViewerConfig.cs" />

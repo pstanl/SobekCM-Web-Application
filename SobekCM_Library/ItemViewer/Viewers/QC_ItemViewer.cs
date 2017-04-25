@@ -28,6 +28,7 @@ using SobekCM.Library.ItemViewer.Menu;
 using SobekCM.Library.UI;
 using SobekCM.Resource_Object;
 using SobekCM.Resource_Object.Divisions;
+using SobekCM.Resource_Object.Utilities;
 using SobekCM.Tools;
 using SobekCM_Resource_Database;
 
@@ -272,13 +273,15 @@ namespace SobekCM.Library.ItemViewer.Viewers
                     (File.GetLastWriteTime(metsInProcessFile).Subtract(DateTime.Now).Hours < 8))
                 {
                     // Read the temporary METS file, and use that to build the qc_item
-                    qc_item = SobekCM_Item_Factory.Get_Item(metsInProcessFile, BriefItem.BibID, BriefItem.VID, null, Tracer);
+                    Tuple<SobekCM_Item, SobekCM_Item_Error> itemAndError = SobekCM_Item_Factory.Get_Item(metsInProcessFile, BriefItem.BibID, BriefItem.VID, null, Tracer);
+                    qc_item = itemAndError.Item1;
                     qc_item.Source_Directory = SobekFileSystem.Resource_Network_Uri(BriefItem);
                 }
                 else
                 {
                     // Just read the normal otherwise ( if we had the ability to deep copy a SobekCM_Item, we could skip this )
-                    qc_item = SobekCM_Item_Factory.Get_Item(BriefItem.BibID, BriefItem.VID, null, Tracer);
+                    Tuple<SobekCM_Item, SobekCM_Item_Error> itemAndError = SobekCM_Item_Factory.Get_Item(BriefItem.BibID, BriefItem.VID, null, Tracer);
+                    qc_item = itemAndError.Item1;
                 }
 
                 // Save to the session, so it is easily available for next time
@@ -352,7 +355,7 @@ namespace SobekCM.Library.ItemViewer.Viewers
                 if (makeSortable.ToString() != CurrentUser.Get_Setting("QC_ItemViewer:SortableMode", "NULL"))
                 {
                     CurrentUser.Add_Setting("QC_ItemViewer:SortableMode", makeSortable);
-                    SobekCM_Database.Set_User_Setting(CurrentUser.UserID, "QC_ItemViewer:SortableMode", makeSortable.ToString());
+                    Engine_Database.Set_User_Setting(CurrentUser.UserID, "QC_ItemViewer:SortableMode", makeSortable.ToString());
                 }
             }
 
@@ -363,7 +366,7 @@ namespace SobekCM.Library.ItemViewer.Viewers
                 if (autonumber_mode.ToString() != CurrentUser.Get_Setting("QC_ItemViewer:AutonumberingMode", "NULL"))
                 {
                     CurrentUser.Add_Setting("QC_ItemViewer:AutonumberingMode", autonumber_mode);
-                    SobekCM_Database.Set_User_Setting(CurrentUser.UserID, "QC_ItemViewer:AutonumberingMode", autonumber_mode.ToString());
+                    Engine_Database.Set_User_Setting(CurrentUser.UserID, "QC_ItemViewer:AutonumberingMode", autonumber_mode.ToString());
                 }
             }
 
@@ -373,7 +376,7 @@ namespace SobekCM.Library.ItemViewer.Viewers
                 if (CurrentRequest.Size_Of_Thumbnails.ToString() != CurrentUser.Get_Setting("QC_ItemViewer:ThumbnailSize", "NULL"))
                 {
                     CurrentUser.Add_Setting("QC_ItemViewer:ThumbnailSize", CurrentRequest.Size_Of_Thumbnails);
-                    SobekCM_Database.Set_User_Setting(CurrentUser.UserID, "QC_ItemViewer:ThumbnailSize", CurrentRequest.Size_Of_Thumbnails.ToString());
+                    Engine_Database.Set_User_Setting(CurrentUser.UserID, "QC_ItemViewer:ThumbnailSize", CurrentRequest.Size_Of_Thumbnails.ToString());
                 }
             }
 
@@ -1820,7 +1823,7 @@ namespace SobekCM.Library.ItemViewer.Viewers
                 }
 
                 // Compute the thumbnail and regular URLs
-                string thumbnail_url = (qc_item.Web.Source_URL + "/" + thumbnail_filename).Replace("\\", "/").Replace("//", "/").Replace("http:/", "http://");
+                string thumbnail_url = (qc_item.Web.Source_URL + "/" + thumbnail_filename).Replace("\\", "/").Replace("//", "/").Replace("http:/", "http://").Replace("https:/", "https://");
                 // If nothing found (but this is a page division) use the no thumbs image
                 if (thumbnail_filename.Length == 0)
                 {
@@ -1840,7 +1843,7 @@ namespace SobekCM.Library.ItemViewer.Viewers
                         }
                     }
 
-                    image_url = (qc_item.Web.Source_URL + "/" + filename).Replace("\\", "/").Replace("//", "/").Replace("http:/", "http://");
+                    image_url = (qc_item.Web.Source_URL + "/" + filename).Replace("\\", "/").Replace("//", "/").Replace("http:/", "http://").Replace("https:/", "https://");
                     if (filename.Length == 0)
                     {
                         image_url = Static_Resources_Gateway.Missingimage_Jpg;
@@ -2377,7 +2380,7 @@ namespace SobekCM.Library.ItemViewer.Viewers
 
         public void Write_Left_Nav_Menu_Section(TextWriter Output, Custom_Tracer Tracer)
         {
-            throw new NotImplementedException();
+            // do nothing
         }
 
         /// <summary> Allows controls to be added directory to a place holder, rather than just writing to the output HTML stream </summary>

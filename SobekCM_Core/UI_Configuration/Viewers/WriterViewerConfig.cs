@@ -33,6 +33,12 @@ namespace SobekCM.Core.UI_Configuration.Viewers
         [ProtoMember(3)]
         public WebContentWriterConfig WebContent { get; set; }
 
+        /// <summary> Configuration information for the search results HTML subwriter and viewers </summary>
+        [DataMember(Name = "results")]
+        [XmlElement("results")]
+        [ProtoMember(4)]
+        public ResultsWriterConfig Results { get; set; }
+
         ///// <summary> Collection of results subviewers mapped to viewer codes </summary>
         //[DataMember(Name = "resultsSubViewers")]
         //[XmlArray("resultsSubViewers")]
@@ -60,14 +66,16 @@ namespace SobekCM.Core.UI_Configuration.Viewers
             Items = new ItemWriterConfig();
             Aggregations = new AggregationWriterConfig();
             WebContent = new WebContentWriterConfig();
+            Results = new ResultsWriterConfig();
         }
 
         /// <summary> Clears all the previously loaded information, such as the default values </summary>
         public void Clear()
         {
-            Items.Clear();
-            Aggregations.Clear();
+            Items.ClearAll();
+            Aggregations.ClearAll();
             WebContent.Clear();
+            Results.ClearAll();
         }
     }
 }

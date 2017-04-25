@@ -38,7 +38,7 @@ namespace SobekCM.Core.UI_Configuration.StaticResources
             Blue_Pin_Img = "http://cdn.sobekrepository.org/images/mapsearch/blue-pin.png";
             Bookshelf_Img = "http://cdn.sobekrepository.org/images/misc/bookshelf.png";
             Bookturner_Js = "http://cdn.sobekrepository.org/includes/bookturner/1.0.0/bookturner.js";
-            Brief_Blue_Img = "http://cdn.sobekrepository.org/images/misc/aggregations.png";
+            Brief_Blue_Img = "http://cdn.sobekrepository.org/images/misc/brief_blue.png";
             Aggregations_Img = "http://cdn.sobekrepository.org/images/misc/building.gif";
             Button_Down_Arrow_Png = "http://cdn.sobekrepository.org/images/misc/button_down_arrow.png";
             Button_First_Arrow_Png = "http://cdn.sobekrepository.org/images/misc/button_first_arrow.png";
@@ -247,6 +247,7 @@ namespace SobekCM.Core.UI_Configuration.StaticResources
             Nothumb_Jpg = "http://cdn.sobekrepository.org/images/misc/NoThumb.jpg";
             Open_Folder_Jpg = "http://cdn.sobekrepository.org/images/misc/open_folder.jpg";
             Open_Folder_Public_Jpg = "http://cdn.sobekrepository.org/images/misc/open_folder_public.jpg";
+            OpenSeaDragon_Js = "http://cdn.sobekrepository.org/includes/openseadragon/1.2.1/openseadragon.min.js";
             Pagenumbg_Gif = "http://cdn.sobekrepository.org/images/bookturner/pageNumBg.gif";
             Plussign_Png = "http://cdn.sobekrepository.org/images/misc/plussign.png";
             Pmets_Img = "http://cdn.sobekrepository.org/images/misc/pmets.gif";
@@ -391,6 +392,8 @@ namespace SobekCM.Core.UI_Configuration.StaticResources
             Zoom_Tool_Cur = "http://cdn.sobekrepository.org/images/misc/zoom_tool.cur";
             Zoomin_Png = "http://cdn.sobekrepository.org/images/bookturner/zoomin.png";
             Zoomout_Png = "http://cdn.sobekrepository.org/images/bookturner/zoomout.png";
+
+            OpenSeaDragon_Image_Prefix = "http://cdn.sobekrepository.org/includes/openseadragon/1.2.1/images/";
         }
 
         /// <summary> The list of all static resource codes found while reading the configuration files </summary>
@@ -517,7 +520,7 @@ namespace SobekCM.Core.UI_Configuration.StaticResources
         [ProtoMember(20)]
         public string Bookturner_Js { get; set; }
 
-        /// <summary> URL for the default resource 'brief_blue.png' file ( http://cdn.sobekrepository.org/images/mapsearch/brief_blue.png by default)</summary>
+        /// <summary> URL for the default resource 'brief_blue.png' file ( http://cdn.sobekrepository.org/images/misc/brief_blue.png by default)</summary>
         [DataMember]
         [XmlElement]
         [ProtoMember(21)]
@@ -1762,6 +1765,12 @@ namespace SobekCM.Core.UI_Configuration.StaticResources
         [ProtoMember(226)]
         public string Open_Folder_Public_Jpg { get; set; }
 
+        /// <summary> URL for the included OpenSeaDragon image library javascript file ( http://cdn.sobekrepository.org/includes/openseadragon/1.2.1/openseadragon.min.js by default)</summary>
+        [DataMember]
+        [XmlElement]
+        [ProtoMember(376)]
+        public string OpenSeaDragon_Js { get; set; }
+
         /// <summary> URL for the default resource 'pagenumbg.gif' file ( http://cdn.sobekrepository.org/images/bookturner/pageNumBg.gif by default)</summary>
         [DataMember]
         [XmlElement]
@@ -2625,6 +2634,12 @@ namespace SobekCM.Core.UI_Configuration.StaticResources
         [XmlElement]
         [ProtoMember(372)]
         public string Zoomout_Png { get; set; }
+
+        /// <summary> OpenSeaDragon image prefix URL, used to load the zooming images in the OpenSeaDragon JPEG2000 viewer ( http://cdn.sobekrepository.org/includes/openseadragon/1.2.1/images/ by default)</summary>
+        [DataMember]
+        [XmlElement]
+        [ProtoMember(375)]
+        public string OpenSeaDragon_Image_Prefix { get; set; }
 
         #region Helper method for adding a static resource reference
 
@@ -3546,6 +3561,15 @@ namespace SobekCM.Core.UI_Configuration.StaticResources
 
                 case "open_folder_public_img":
                     Open_Folder_Public_Jpg = Source;
+                    break;
+
+                case "openseadragon.js":
+                    OpenSeaDragon_Js = Source;
+                    break;
+
+
+                case "openseadragon image prefix":
+                    OpenSeaDragon_Image_Prefix = Source;
                     break;
 
                 case "pagenumbg_img":
